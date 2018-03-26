@@ -220,5 +220,7 @@ try:
 except Exception as e:
     logging.error('Failed to remove input file: {}'.format(e))
 
+print('Finished creating PDF!')
+print('You can close this window now.')
 logging.info('FINISHED\n')
 
