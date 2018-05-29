@@ -19,7 +19,7 @@ def format_row(r):
     return '{} {}, {}, {}, {}, {}\n'.format(r[2], r[1], r[7], r[8], r[9], r[10])
 
 # How many months out do you want labels.  1 would be standard.
-months_out = 2
+months_out = 1
 # determine 'next' month
 next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 home_dir = os.path.expanduser('~')
@@ -131,10 +131,31 @@ try:
         address_input = reader(csvfile)
         headers = next(address_input)[0:]
         for row in address_input:
+
             # if the birthday is null skip it
             if row[12] in (None, ''):
-
                 continue
+
+            try:
+                bday = dt.datetime.strptime(row[12], '%m/%d/%Y')
+            except ValueError as err:
+                logging.debug('Unexpected date format: {}'.format(row[12]))
+                logging.debug('Trying %m/%d/%y')
+                try:
+                    bday = dt.datetime.strptime(row[12], '%m/%d/%y')
+                except ValueError as err:
+                    logging.debug('Trying %m/%d')
+                    try:
+                        bday = dt.datetime.strptime(row[12], '%m/%d')
+                    except:
+                        logging.error('Skipping invalid birthday: {} {}: {}'.format(row[2], row[1], row[12]))
+                        skipped.write('{:20}: {}'.format('INVALID BIRTHDAY', format_row(row)))
+                        continue
+
+            if bday.month != next_month.month:
+                # print('bday is {}, skipping'.format(bday))
+                continue
+
             # if there is no address, skip it
             if row[7] in (None, ""):
                 skipped.write('{:20}: {}'.format('NO ADDRESS', format_row(row)))
@@ -151,25 +172,9 @@ try:
             if row[10] in (None, ""):
                 skipped.write('{:20}: {}'.format('NO ZIP', format_row(row)))
                 continue
-            try:
-                bday = dt.datetime.strptime(row[12], '%m/%d/%Y')
-            except ValueError as err:
-                logging.debug('Unexpected date format: {}'.format(row[12]))
-                logging.debug('Trying %m/%d/%y')
-                try:
-                    bday = dt.datetime.strptime(row[12], '%m/%d/%y')
-                except ValueError as err:
-                    logging.debug('Trying %m/%d')
-                    try:
-                        bday = dt.datetime.strptime(row[12], '%m/%d')
-                    except:
-                        logging.error('Skipping invalid birthday: {} {}: {}'.format(row[2], row[1], row[12]))
-                        skipped.write('{:20}: {}'.format('INVALID BIRTHDAY', row))
-                        continue
 
-            if bday.month != next_month.month:
-                # print('bday is {}, skipping'.format(bday))
-                continue
+
+
 
             address_dict = {key: value for key, value in zip(headers, row)}
             mailing_address = "{} {}\n{}\n{}, {} {}".format(address_dict['First Name'],
