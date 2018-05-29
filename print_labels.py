@@ -15,9 +15,11 @@ from reportlab.platypus import Table
 from reportlab.platypus import TableStyle
 import shutil
 
+def format_row(r):
+    return '{} {}, {}, {}, {}, {}\n'.format(r[2], r[1], r[7], r[8], r[9], r[10])
 
 # How many months out do you want labels.  1 would be standard.
-months_out = 1
+months_out = 2
 # determine 'next' month
 next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 home_dir = os.path.expanduser('~')
@@ -35,6 +37,15 @@ logging.basicConfig(format='%(asctime)-15s %(levelname)-5s %(message)s',
 logging.info('STARTING')
 
 logging.info('user home is {}'.format(home_dir))
+
+# need to keep track of rows that are skipped
+skipped_file = '{}/Documents/birthday_labels_skipped_{}{:02d}.txt'.format(home_dir,
+                                                                          next_month.year,
+                                                                          next_month.month)
+try:
+    skipped = open(skipped_file, 'w')
+except Exception as e:
+    logging.error('Could not open skipped file for write'.format(skipped_file))
 
 # TODO: make passwd a config variable
 try:
@@ -122,18 +133,23 @@ try:
         for row in address_input:
             # if the birthday is null skip it
             if row[12] in (None, ''):
+
                 continue
             # if there is no address, skip it
             if row[7] in (None, ""):
+                skipped.write('{:20}: {}'.format('NO ADDRESS', format_row(row)))
                 continue
             # if there is no city, skip it
             if row[8] in (None, ""):
+                skipped.write('{:20}: {}'.format('NO CITY', format_row(row)))
                 continue
             # if there is no state skip it
             if row[9] in (None, ""):
+                skipped.write('{:20}: {}'.format('NO STATE', format_row(row)))
                 continue
             # if there is no zip, we don't have a valid address
             if row[10] in (None, ""):
+                skipped.write('{:20}: {}'.format('NO ZIP', format_row(row)))
                 continue
             try:
                 bday = dt.datetime.strptime(row[12], '%m/%d/%Y')
@@ -148,6 +164,7 @@ try:
                         bday = dt.datetime.strptime(row[12], '%m/%d')
                     except:
                         logging.error('Skipping invalid birthday: {} {}: {}'.format(row[2], row[1], row[12]))
+                        skipped.write('{:20}: {}'.format('INVALID BIRTHDAY', row))
                         continue
 
             if bday.month != next_month.month:
@@ -167,6 +184,9 @@ try:
 except Exception as e:
     logging.error('Could not open {}: {}'.format(local_filename, e))
 logging.info('Found {} addresses'.format(len(address_list)))
+
+skipped.close()
+
 if len(address_list) == 30:
     fill_value = 0
 elif len(address_list) < 30:
@@ -223,4 +243,5 @@ except Exception as e:
 print('Finished creating PDF!')
 print('You can close this window now.')
 logging.info('FINISHED\n')
+
 
