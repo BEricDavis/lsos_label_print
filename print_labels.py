@@ -15,37 +15,39 @@ from reportlab.platypus import Table
 from reportlab.platypus import TableStyle
 import shutil
 
+
 def format_row(r):
     return '{} {}, {}, {}, {}, {}\n'.format(r[2], r[1], r[7], r[8], r[9], r[10])
+
 
 # How many months out do you want labels.  1 would be standard.
 months_out = 1
 # determine 'next' month
 next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 home_dir = os.path.expanduser('~')
-local_path = f'{home_dir}/Documents'
+local_path = os.path.join(f'{home_dir}', 'Documents')
 
-log_path = f'{local_path}/logs'
+log_path = os.path.join(f'{local_path}', 'logs')
 if not os.path.exists(log_path):
     os.makedirs(log_path)
 
 logging.basicConfig(format='%(asctime)-15s %(levelname)-5s %(message)s',
                     level=logging.INFO,
-                    filename='{}/birthday_labels_{}{:02d}.log'.format(log_path,
-                                                                      next_month.year,
-                                                                      next_month.month))
+                    filename=os.path.join(f'{log_path}', f'birthday_labels_{next_month.year}{next_month.month:02d}.log'))
 logging.info('STARTING')
 
-logging.info('user home is {}'.format(home_dir))
+logging.info(f'user home is {home_dir}')
 
 # need to keep track of rows that are skipped
-skipped_file = '{}/Documents/birthday_labels_skipped_{}{:02d}.txt'.format(home_dir,
-                                                                          next_month.year,
-                                                                          next_month.month)
+skipped_file = os.path.join(f'{home_dir}',
+                            'Documents',
+                            f'birthday_labels_skipped_{next_month.year}{next_month.month:02d}.txt')
+logging.info(f'Saving skipped customers in: {skipped_file}')
+
 try:
     skipped = open(skipped_file, 'w')
 except Exception as e:
-    logging.error('Could not open skipped file for write'.format(skipped_file))
+    logging.error(f'Could not open {skipped_file} for write')
 
 # TODO: make passwd a config variable
 try:
@@ -86,11 +88,11 @@ else:
 # and pass them to requests, so it can perform the download.
 # get_cookies returns an array of dicts, one per cookie
 in_cookies = driver.get_cookies()
-#pp.pprint(in_cookies)
+# pp.pprint(in_cookies)
 
 c = RequestsCookieJar()
 for cookie in in_cookies:
-    #pp.pprint(f'cookie={cookie}')
+    # pp.pprint(f'cookie={cookie}')
     args = {k.lower(): cookie[k] for k in cookie if k not in ['name', 'value']}
     # httpOnly is for browsers? try rmoving it
     args.pop('httponly', None)
@@ -100,22 +102,22 @@ for cookie in in_cookies:
         args.pop('expiry', None)
     except KeyError:
         pass
-        #print('no expiry in this cookie.  moving on.')
+        # print('no expiry in this cookie.  moving on.')
     logging.debug(f'args={args}')
     c.set(cookie['name'],
           cookie['value'],
           **args
           )
-#pp.pprint(c)
-
+# pp.pprint(c)
 
 url = "https://littleshopofstitches.rainadmin.com/pos-app/customers/download-customers-csv.php"
 r = requests.get(url,
                  params={"type": "edit_custs"},
                  cookies=c)
 logging.debug(r.headers)
-#print(r.content)
-local_filename = f'{local_path}/bulk_customers.csv'
+# print(r.content)
+local_filename = os.path.join(f'{local_path}', 'bulk_customers.csv')
+logging.info(f'Saving response to {local_filename}')
 with open(local_filename, 'w') as f:
     f.write(str(r.content.decode('utf-8')))
 
@@ -205,35 +207,36 @@ fill_list = ['' for x in range(0, fill_value)]
 
 address_list.extend(fill_list)
 # this breaks lists into 3
+logging.info('Chunking address list')
 chunks = [address_list[x:x+3] for x in range(0, len(address_list), 3)]
 
 # much help from https://www.blog.pythonlibrary.org/2010/09/21/reportlab-tables-creating-tables-in-pdfs-with-python/
-#doc = reportlab.platypus.SimpleDocTemplate("output/birthday_labels_{}{:02d}.pdf".format(
+# doc = reportlab.platypus.SimpleDocTemplate("output/birthday_labels_{}{:02d}.pdf".format(
+output_pdf = os.path.join(f'{local_path}',
+                          f'birthday_labels_{next_month.year}{next_month.month:02d}.pdf')
 logging.info('Output going to: {}'.format(local_path))
-doc = reportlab.platypus.SimpleDocTemplate("{}/birthday_labels_{}{:02d}.pdf".format(
-    local_path,
-    str(next_month.year), next_month.month),
+doc = reportlab.platypus.SimpleDocTemplate(output_pdf,
                                            pagesize=letter,
-                                           leftMargin=72,
-                                           rightMargin=13,
-                                           topMargin=16,
-                                           bottomMargin=36)
+                                           leftMargin=57,
+                                           rightMargin=11,
+                                           topMargin=11,
+                                           bottomMargin=10)
 width, height = letter
 t = Table(chunks,
-          rowHeights=72,
+          rowHeights=74,
           colWidths=200)
 
-logging.debug('address list length: {}'.format(len(address_list)))
+logging.info('address list length: {}'.format(len(address_list)))
 num_rows = int(len(address_list)/3)
-logging.debug('rows: {}'.format(num_rows))
+logging.info('rows: {}'.format(num_rows))
 
 t.setStyle(TableStyle([('FONT', (0, 0), (2, num_rows - 1), 'Helvetica', 12)]))
-elements = []
-elements.append(t)
+elements = [t]
 doc.build(elements)
 
 # keep one backup file for troubleshooting
 try:
+    logging.info(f'Backing up {local_filename}')
     shutil.copyfile(local_filename, '{}.bak'.format(local_filename))
 except Exception as e:
     logging.error('Could not create backup of {}: {}'.format(local_filename, e))
@@ -241,12 +244,18 @@ except Exception as e:
 
 # delete input file so the same one can be reused next month
 try:
+    logging.info(f'Deleting {local_filename}')
     os.remove(local_filename)
 except Exception as e:
     logging.error('Failed to remove input file: {}'.format(e))
 
 print('Finished creating PDF!')
-print('You can close this window now.')
+print('\n' * 5)
+print('#' * 40)
+print('# COMPLETED')
+print(f'# Your file is: {output_pdf}')
+print('# You can close this window now.')
+print('#' * 40)
 logging.info('FINISHED\n')
 
 
