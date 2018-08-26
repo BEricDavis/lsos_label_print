@@ -1,3 +1,4 @@
+import argparse
 from selenium import webdriver
 from selenium.webdriver.common import action_chains, keys
 import datetime as dt
@@ -15,6 +16,13 @@ from reportlab.platypus import Table
 from reportlab.platypus import TableStyle
 import shutil
 
+pdf_name = ""
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--pdf',
+                    dest=pdf_name)
+
+args = parser.parse_args()
 
 def format_row(r):
     return '{} {}, {}, {}, {}, {}\n'.format(r[2], r[1], r[7], r[8], r[9], r[10])
@@ -25,15 +33,15 @@ months_out = 1
 # determine 'next' month
 next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 home_dir = os.path.expanduser('~')
-local_path = os.path.join(f'{home_dir}', 'Documents')
+local_path = os.path.join(home_dir, 'Documents')
 
-log_path = os.path.join(f'{local_path}', 'logs')
+log_path = os.path.join(local_path, 'logs')
 if not os.path.exists(log_path):
     os.makedirs(log_path)
 
-logging.basicConfig(format='%(asctime)-15s %(levelname)-5s %(message)s',
+logging.basicConfig(format='%(asctime)-15s %(levelname)-5s:%(lineno)s %(message)s',
                     level=logging.INFO,
-                    filename=os.path.join(f'{log_path}', f'birthday_labels_{next_month.year}{next_month.month:02d}.log'))
+                    filename=os.path.join(log_path, f'birthday_labels-{next_month.year}{next_month.month:02d}.log'))
 logging.info('STARTING')
 
 logging.info(f'user home is {home_dir}')
@@ -62,8 +70,15 @@ except Exception as e:
 
 options = webdriver.ChromeOptions()
 options.add_argument('headless')
-driver = webdriver.Chrome('./drivers/chromedriver.exe', chrome_options=options)
-driver.get("https://www.thelittleshopofstitches.com/admin")
+try:
+    driver = webdriver.Chrome('./drivers/chromedriver.exe', chrome_options=options)
+    try:
+        driver.get("https://www.thelittleshopofstitches.com/admin")
+    except Exception as e:
+        logging.error(f'Driver failed to get site: {e}')
+except Exception as e:
+    logging.error(f'Failed to create driver: {e}')
+    sys.exit(1)
 
 username = driver.find_element_by_xpath('//*[@id="username"]')
 try:
@@ -121,7 +136,6 @@ logging.info(f'Saving response to {local_filename}')
 with open(local_filename, 'w') as f:
     f.write(str(r.content.decode('utf-8')))
 
-
 logging.info('Reading file: {}'.format(local_filename))
 
 # list to hold the addresses
@@ -150,8 +164,12 @@ try:
                     try:
                         bday = dt.datetime.strptime(row[12], '%m/%d')
                     except:
-                        logging.error('Skipping invalid birthday: {} {}: {}'.format(row[2], row[1], row[12]))
-                        skipped.write('{:20}: {}'.format('INVALID BIRTHDAY', format_row(row)))
+                        logging.debug('Trying %b-%m')
+                        try:
+                            bday = dt.datetime.strptime(row[12], '%d-%b')
+                        except ValueError as err:
+                            logging.error('Skipping invalid birthday: {} {}: {}'.format(row[2], row[1], row[12]))
+                            skipped.write('{:20}: {}'.format('INVALID BIRTHDAY', format_row(row)))
                         continue
 
             if bday.month != next_month.month:
@@ -175,9 +193,6 @@ try:
                 skipped.write('{:20}: {}'.format('NO ZIP', format_row(row)))
                 continue
 
-
-
-
             address_dict = {key: value for key, value in zip(headers, row)}
             mailing_address = "{} {}\n{}\n{}, {} {}".format(address_dict['First Name'],
                                                             address_dict['Last Name'],
@@ -185,11 +200,11 @@ try:
                                                             address_dict['City'],
                                                             address_dict['State'],
                                                             address_dict['Zip'])
-            #print('{}\n{}\n'.format(mailing_address, bday))
 
             address_list.append(mailing_address)
 except Exception as e:
     logging.error('Could not open {}: {}'.format(local_filename, e))
+    sys.exit(1)
 logging.info('Found {} addresses'.format(len(address_list)))
 
 skipped.close()
@@ -212,15 +227,22 @@ chunks = [address_list[x:x+3] for x in range(0, len(address_list), 3)]
 
 # much help from https://www.blog.pythonlibrary.org/2010/09/21/reportlab-tables-creating-tables-in-pdfs-with-python/
 # doc = reportlab.platypus.SimpleDocTemplate("output/birthday_labels_{}{:02d}.pdf".format(
-output_pdf = os.path.join(f'{local_path}',
-                          f'birthday_labels_{next_month.year}{next_month.month:02d}.pdf')
-logging.info('Output going to: {}'.format(local_path))
-doc = reportlab.platypus.SimpleDocTemplate(output_pdf,
+# output_pdf = os.path.join(f'{local_path}',
+#                           f'birthday_labels_{next_month.year}{next_month.month:02d}.pdf')
+
+if not pdf_name:
+    pdf_name = f'birthday_labels-{next_month.year}{next_month.month:02d}.pdf'
+else:
+    pdf_name = f'birthday_labels-{next_month.year}{next_month.month:02d}.pdf'
+output_pdf = os.path.join(local_path, pdf_name)
+logging.info(f'Output going to: {output_pdf}')
+doc = reportlab.platypus.SimpleDocTemplate(filename=output_pdf,
                                            pagesize=letter,
                                            leftMargin=57,
                                            rightMargin=11,
                                            topMargin=11,
                                            bottomMargin=10)
+
 width, height = letter
 t = Table(chunks,
           rowHeights=74,
@@ -230,9 +252,15 @@ logging.info('address list length: {}'.format(len(address_list)))
 num_rows = int(len(address_list)/3)
 logging.info('rows: {}'.format(num_rows))
 
+logging.info('Setting Table Style')
 t.setStyle(TableStyle([('FONT', (0, 0), (2, num_rows - 1), 'Helvetica', 12)]))
 elements = [t]
-doc.build(elements)
+try:
+    doc.build(elements)
+except Exception as e:
+    logging.exception(e)
+    logging.error(vars(doc))
+    sys.exit(1)
 
 # keep one backup file for troubleshooting
 try:
@@ -240,7 +268,6 @@ try:
     shutil.copyfile(local_filename, '{}.bak'.format(local_filename))
 except Exception as e:
     logging.error('Could not create backup of {}: {}'.format(local_filename, e))
-
 
 # delete input file so the same one can be reused next month
 try:
@@ -250,7 +277,7 @@ except Exception as e:
     logging.error('Failed to remove input file: {}'.format(e))
 
 print('Finished creating PDF!')
-print('\n' * 5)
+print('\n' * 2)
 print('#' * 40)
 print('# COMPLETED')
 print(f'# Your file is: {output_pdf}')
