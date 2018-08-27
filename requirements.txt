@@ -4,10 +4,11 @@ cffi==1.10.0
 cryptography==1.8.1
 cx-Freeze==5.0.2
 future==0.16.0
+gooey==1.0.1
 idna==2.6
 olefile==0.44
 packaging==16.8
-Pillow==4.1.1
+Pillow>=4.1.1
 pycparser==2.18
 PyInstaller==3.2.1
 pyOpenSSL==17.0.0
