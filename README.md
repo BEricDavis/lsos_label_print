@@ -6,10 +6,4 @@
 1. Copy lsos.conf to builds/exe.winamd64-3.6/
 1. zip up the build directory
 
-<h2>Stupidness</h2>
-The output pdf cannot be named with a _2 in it for some insane reason
 
-<pre>
-
-
-</pre>
