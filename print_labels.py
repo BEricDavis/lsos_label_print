@@ -25,7 +25,12 @@ parser.add_argument('--debug',
                     action='store_true')
 
 args = parser.parse_args()
+if args.debug:
+    log_level = 'DEBUG'
+else:
+    log_level = 'INFO'
 
+numeric_level = getattr(logging, log_level)
 def format_row(r):
     return '{} {}, {}, {}, {}, {}\n'.format(r[2], r[1], r[7], r[8], r[9], r[10])
 
@@ -42,10 +47,9 @@ if not os.path.exists(log_path):
     os.makedirs(log_path)
 
 logging.basicConfig(format='%(asctime)-15s %(levelname)-5s:%(lineno)s %(message)s',
-                    level=logging.INFO,
+                    level=logging.DEBUG,
                     filename=os.path.join(log_path, f'birthday_labels-{next_month.year}{next_month.month:02d}.log'))
 logging.info('STARTING')
-print('starting')
 logging.info(f'user home is {home_dir}')
 
 # need to keep track of rows that are skipped
@@ -53,7 +57,7 @@ skipped_file = os.path.join(f'{home_dir}',
                             'Documents',
                             f'birthday_labels_skipped_{next_month.year}{next_month.month:02d}.txt')
 logging.info(f'Saving skipped customers in: {skipped_file}')
-print('trying')
+
 try:
     skipped = open(skipped_file, 'w')
 except Exception as e:
@@ -140,6 +144,15 @@ with open(local_filename, 'w') as f:
 
 logging.info('Reading file: {}'.format(local_filename))
 
+# sometimes LikeSew changes the report.
+# set the indices for the columns here so they're easier to change
+address_index = 8
+city_index = 9
+state_index = 10
+zip_index = 11
+birthday_index = 13
+
+
 # list to hold the addresses
 address_list = []
 
@@ -151,26 +164,26 @@ try:
         for row in address_input:
 
             # if the birthday is null skip it
-            if row[12] in (None, ''):
+            if row[birthday_index] in (None, ''):
                 continue
 
             try:
-                bday = dt.datetime.strptime(row[12], '%m/%d/%Y')
+                bday = dt.datetime.strptime(row[birthday_index], '%m/%d/%Y')
             except ValueError as err:
-                logging.debug('Unexpected date format: {}'.format(row[12]))
+                logging.debug('Unexpected date format: {}'.format(row[birthday_index]))
                 logging.debug('Trying %m/%d/%y')
                 try:
-                    bday = dt.datetime.strptime(row[12], '%m/%d/%y')
+                    bday = dt.datetime.strptime(row[birthday_index], '%m/%d/%y')
                 except ValueError as err:
                     logging.debug('Trying %m/%d')
                     try:
-                        bday = dt.datetime.strptime(row[12], '%m/%d')
+                        bday = dt.datetime.strptime(row[birthday_index], '%m/%d')
                     except:
                         logging.debug('Trying %b-%m')
                         try:
-                            bday = dt.datetime.strptime(row[12], '%d-%b')
+                            bday = dt.datetime.strptime(row[birthday_index], '%d-%b')
                         except ValueError as err:
-                            logging.error('Skipping invalid birthday: {} {}: {}'.format(row[2], row[1], row[12]))
+                            logging.error('Skipping invalid birthday: {} {}: {}'.format(row[2], row[1], row[birthday_index]))
                             skipped.write('{:20}: {}'.format('INVALID BIRTHDAY', format_row(row)))
                         continue
 
@@ -179,19 +192,19 @@ try:
                 continue
 
             # if there is no address, skip it
-            if row[7] in (None, ""):
+            if row[address_index] in (None, ""):
                 skipped.write('{:20}: {}'.format('NO ADDRESS', format_row(row)))
                 continue
             # if there is no city, skip it
-            if row[8] in (None, ""):
+            if row[city_index] in (None, ""):
                 skipped.write('{:20}: {}'.format('NO CITY', format_row(row)))
                 continue
             # if there is no state skip it
-            if row[9] in (None, ""):
+            if row[state_index] in (None, ""):
                 skipped.write('{:20}: {}'.format('NO STATE', format_row(row)))
                 continue
             # if there is no zip, we don't have a valid address
-            if row[10] in (None, ""):
+            if row[zip_index] in (None, ""):
                 skipped.write('{:20}: {}'.format('NO ZIP', format_row(row)))
                 continue
 
