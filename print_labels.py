@@ -15,6 +15,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import Table
 from reportlab.platypus import TableStyle
 import shutil
+import webbrowser
 
 pdf_name = ""
 
@@ -147,11 +148,11 @@ logging.info('Reading file: {}'.format(local_filename))
 
 # sometimes LikeSew changes the report.
 # set the indices for the columns here so they're easier to change
-address_index = 8
-city_index = 9
-state_index = 10
-zip_index = 11
-birthday_index = 13
+# address_index = 8
+# city_index = 9
+# state_index = 10
+# zip_index = 11
+# birthday_index = 13
 
 
 # list to hold the addresses
@@ -162,6 +163,15 @@ try:
     with open(local_filename, newline="") as csvfile:
         address_input = reader(csvfile)
         headers = next(address_input)[0:]
+
+        # see if we can set the indices based on the headers
+        address_index = headers.index('Address')
+        city_index = headers.index('City')
+        state_index = headers.index('State')
+        zip_index = headers.index('Zip')
+        birthday_index = headers.index('Birthday')
+
+
         for row in address_input:
 
             # if the birthday is null skip it
@@ -300,5 +310,12 @@ print(f'# Your file is: {output_pdf}')
 print('# You can close this window now.')
 print('#' * 40)
 logging.info('FINISHED\n')
+
+webbrowser.open(f'{skipped_file}')
+
+try:
+    webbrowser.get('firefox').open_new_tab(f'{output_pdf}')
+except webbrowser.Error as e:
+    logging.error(f'Failed to open Firefox: {e}')
 
 
