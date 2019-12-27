@@ -21,6 +21,8 @@ pdf_name = ""
 parser = argparse.ArgumentParser()
 parser.add_argument('--pdf',
                     dest=pdf_name)
+parser.add_argument('--debug',
+                    action='store_true')
 
 args = parser.parse_args()
 
@@ -43,7 +45,7 @@ logging.basicConfig(format='%(asctime)-15s %(levelname)-5s:%(lineno)s %(message)
                     level=logging.INFO,
                     filename=os.path.join(log_path, f'birthday_labels-{next_month.year}{next_month.month:02d}.log'))
 logging.info('STARTING')
-
+print('starting')
 logging.info(f'user home is {home_dir}')
 
 # need to keep track of rows that are skipped
@@ -51,7 +53,7 @@ skipped_file = os.path.join(f'{home_dir}',
                             'Documents',
                             f'birthday_labels_skipped_{next_month.year}{next_month.month:02d}.txt')
 logging.info(f'Saving skipped customers in: {skipped_file}')
-
+print('trying')
 try:
     skipped = open(skipped_file, 'w')
 except Exception as e:
@@ -71,7 +73,7 @@ except Exception as e:
 options = webdriver.ChromeOptions()
 options.add_argument('headless')
 try:
-    driver = webdriver.Chrome('./drivers/chromedriver.exe', chrome_options=options)
+    driver = webdriver.Chrome('./drivers/chromedriver.exe', options=options)
     try:
         driver.get("https://www.thelittleshopofstitches.com/admin")
     except Exception as e:
