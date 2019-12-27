@@ -76,6 +76,7 @@ except Exception as e:
 
 options = webdriver.ChromeOptions()
 options.add_argument('headless')
+options.add_experimental_option('excludeSwitches', ['enable-logging'])
 try:
     driver = webdriver.Chrome('./drivers/chromedriver.exe', options=options)
     try:
