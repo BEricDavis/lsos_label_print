@@ -307,7 +307,7 @@ def parse_file(skipped, pdf_name, output_pdf):
     num_rows = int(len(address_list)/3)
     logger.info('rows: {}'.format(num_rows))
 
-    logging.info('Setting Table Style')
+    logger.info('Setting Table Style')
     t.setStyle(TableStyle([('FONT', (0, 0), (2, num_rows - 1), 'Helvetica', 12)]))
     elements = [t]
     try:
@@ -340,14 +340,6 @@ def finish(output_pdf):
     print(f'# Your file is: {output_pdf}')
     print('# You can close this window now.')
     print('#' * 40)
-
-
-
-
-# try:
-#     webbrowser.get('firefox').open_new_tab(f'{output_pdf}')
-# except webbrowser.Error as e:
-#     logging.error(f'Failed to open Firefox: {e}')
 
 def main():
     args = parse_script_args()
