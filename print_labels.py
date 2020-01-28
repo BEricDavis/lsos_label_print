@@ -340,7 +340,7 @@ def finish(output_pdf):
     print(f'# Your file is: {output_pdf}')
     print('# You can close this window now.')
     print('#' * 40)
-    logger.info('FINISHED\n')
+
 
 
 
@@ -375,15 +375,18 @@ def main():
     except Exception as e:
         logger.error(f'Could not open {skipped_file} for write')
         sys.exit(1)
-    if args.local:
-        logger.info('Using local file')
-    else:
-        logger.info('Retrieving file from website')
-        #download_report()
+
+    logger.info('Using local file')    
+    # if args.local:
+    #     logger.info('Using local file')
+    # else:
+    #     logger.info('Retrieving file from website')
+    #     # disabling the report download because LikeSew doesn't like it
+    #     #download_report()
     parse_file(skipped, pdf_name, output_pdf)  
     finish(output_pdf)
     webbrowser.open(f'{skipped_file}')
-
+    logger.info('FINISHED\n')
 
 if __name__ == '__main__':
     main()
