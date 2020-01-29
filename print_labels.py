@@ -26,7 +26,7 @@ next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 
 # try to get file from Downloads
 local_path = os.path.join(home_dir, 'Downloads')
-local_filename = os.path.join(f'{local_path}', 'edit-customers-1433.csv')
+local_filename = os.path.join(f'{local_path}', '1433-edit-customers.csv')
 
 
 # local_path = os.path.join(home_dir, 'Documents')
@@ -358,7 +358,7 @@ def main():
 
     # need to keep track of rows that are skipped
     skipped_file = os.path.join(f'{home_dir}',
-                                'Documents',
+                                'Downloads',
                                 f'birthday_labels_skipped_{next_month.year}{next_month.month:02d}.txt')
     logger.info(f'Saving skipped customers in: {skipped_file}')
 
