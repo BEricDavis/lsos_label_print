@@ -16,6 +16,8 @@ from reportlab.platypus import Table
 from reportlab.platypus import TableStyle
 import shutil
 import webbrowser
+# with Gooey, it appears the script has to be launched with 'python <script>'
+from gooey import Gooey
 
 home_dir = os.path.expanduser('~')
 # How many months out do you want labels.  1 would be standard.
@@ -27,19 +29,20 @@ next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 local_path = os.path.join(home_dir, 'Downloads')
 local_filename = os.path.join(f'{local_path}', '1433-edit-customers.csv')
 
+@Gooey
 def parse_script_args():
     logger = logging.getLogger(__name__)
     logger.info('parsing args')
     parser = argparse.ArgumentParser()
     parser.add_argument('--pdf',
                         dest='pdf_name',
-                        help='Use a different name for the final PDF file')
-    parser.add_argument('--debug',
-                        action='store_true',
-                        help='Enable debug logging.')
+                        help='Use a different name for the final PDF file. Default is birthday_labels-yyyymm.pdf')
     parser.add_argument('--local',
                         action='store_true',
                         help='Use a file that you have manually downloaded from LikeSew.')
+    parser.add_argument('--debug',
+                        action='store_true',
+                        help='Enable debug logging.')
     args = parser.parse_args()
     return args
 
@@ -143,8 +146,8 @@ def download_report(config):
 
     url = "https://littleshopofstitches.rainadmin.com/pos-app/customers/download-customers-csv.php"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0'}
-    print(f'Headers: {headers}')
-    print(f'URL: {url}')
+    logger.debug(f'Headers: {headers}')
+    logger.debug(f'URL: {url}')
     r = requests.get(url,
                     headers=headers,
                     params={"type": "edit_custs"},
