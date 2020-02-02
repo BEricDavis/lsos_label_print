@@ -86,16 +86,17 @@ def read_config():
         with open('lsos.conf') as f:
             config = json.load(f)
             logger.debug(config)
-            passwd = config['password']
-            user = config['user']
-
+            return config
     except Exception as e:
         logger.error(f"Could not read config: {e}")
+        sys.exit(1)
 
   
 
-def download_report():
+def download_report(config):
     logger = logging.getLogger(__name__)
+    user = config['user']
+    passwd = config['password']
     options = webdriver.ChromeOptions()
     options.add_argument('headless')
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -103,6 +104,10 @@ def download_report():
         driver = webdriver.Chrome('./drivers/chromedriver.exe', options=options)
         try:
             driver.get("https://www.thelittleshopofstitches.com/admin")
+            # Selenium Chrome driver user aent is this:
+            #192.168.0.14 - - [02/Feb/2020:10:34:48 -0500] "GET / HTTP/1.1" 200 396 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.130 Safari/537.36"
+
+            # driver.get('http://192.168.0.12/')
         except Exception as e:
             logger.error(f'Driver failed to get site: {e}')
     except Exception as e:
@@ -155,7 +160,10 @@ def download_report():
     # pp.pprint(c)
 
     url = "https://littleshopofstitches.rainadmin.com/pos-app/customers/download-customers-csv.php"
+    # url = "http://192.168.0.12/pos-app/customers/download-customers-csv.php"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0'}
+    print(f'Headers: {headers}')
+    print(f'URL: {url}')
     r = requests.get(url,
                     headers=headers,
                     params={"type": "edit_custs"},
@@ -170,15 +178,6 @@ def download_report():
 def parse_file(skipped, pdf_name, output_pdf):
     logger = logging.getLogger(__name__)
     logger.info('Reading file: {}'.format(local_filename))
-
-    # sometimes LikeSew changes the report.
-    # set the indices for the columns here so they're easier to change
-    # address_index = 8
-    # city_index = 9
-    # state_index = 10
-    # zip_index = 11
-    # birthday_index = 13
-
 
     # list to hold the addresses
     address_list = []
@@ -197,7 +196,6 @@ def parse_file(skipped, pdf_name, output_pdf):
             state_index = headers.index('State')
             zip_index = headers.index('Zip')
             birthday_index = headers.index('Birthday')
-
 
             for row in address_input:
 
@@ -288,10 +286,6 @@ def parse_file(skipped, pdf_name, output_pdf):
     # output_pdf = os.path.join(f'{local_path}',
     #                           f'birthday_labels_{next_month.year}{next_month.month:02d}.pdf')
 
-    # if not pdf_name:
-    #     pdf_name = f'birthday_labels-{next_month.year}{next_month.month:02d}.pdf'
-    # else:
-    #     pdf_name = f'birthday_labels-{next_month.year}{next_month.month:02d}.pdf'
     logger.info(f'Output going to: {output_pdf}')
     doc = reportlab.platypus.SimpleDocTemplate(filename=output_pdf,
                                             pagesize=letter,
@@ -358,6 +352,8 @@ def main():
     logger.info('STARTING')
     logger.info(f'user home is {home_dir}')
 
+    config = read_config()
+
     # need to keep track of rows that are skipped
     skipped_file = os.path.join(f'{home_dir}',
                                 'Downloads',
@@ -370,13 +366,13 @@ def main():
         logger.error(f'Could not open {skipped_file} for write')
         sys.exit(1)
 
-    logger.info('Using local file')    
-    # if args.local:
-    #     logger.info('Using local file')
-    # else:
-    #     logger.info('Retrieving file from website')
-    #     # disabling the report download because LikeSew doesn't like it
-    #     #download_report()
+ 
+    if args.local:
+        logger.info('Using local file')
+        print('Using local file')
+    else:
+        logger.info('Retrieving file from website')
+        download_report(config)
     parse_file(skipped, pdf_name, output_pdf)  
     finish(output_pdf)
     webbrowser.open(f'{skipped_file}')
