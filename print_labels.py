@@ -17,7 +17,6 @@ from reportlab.platypus import TableStyle
 import shutil
 import webbrowser
 
-
 home_dir = os.path.expanduser('~')
 # How many months out do you want labels.  1 would be standard.
 months_out = 1
@@ -27,11 +26,6 @@ next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 # try to get file from Downloads
 local_path = os.path.join(home_dir, 'Downloads')
 local_filename = os.path.join(f'{local_path}', '1433-edit-customers.csv')
-
-
-# local_path = os.path.join(home_dir, 'Documents')
-# local_filename = os.path.join(f'{local_path}', 'bulk_customers.csv')
-
 
 def parse_script_args():
     logger = logging.getLogger(__name__)
@@ -59,7 +53,6 @@ def configure_logging(args):
     logger = logging.getLogger(__name__)
     logger.setLevel(numeric_level)
 
-
     log_path = os.path.join(local_path, 'logs')
     if not os.path.exists(log_path):
         os.makedirs(log_path)
@@ -68,19 +61,9 @@ def configure_logging(args):
     fm = logging.Formatter('%(asctime)s %(levelname)s %(funcName)s:%(lineno)d %(message)s')
     fh.setFormatter(fm)
     logger.addHandler(fh)
-    
-
-
-    # logging.basicConfig(format='%(asctime)-15s %(levelname)-5s:%(lineno)s %(message)s',
-    #                 level=logging.DEBUG,
-    #                 filename=os.path.join(log_path, f'birthday_labels-{next_month.year}{next_month.month:02d}.log'))
-
 
 def format_row(r):
     return '{} {}, {}, {}, {}, {}\n'.format(r[2], r[1], r[7], r[8], r[9], r[10])
-
-
-
 
 # TODO: make passwd a config variable
 def read_config():
@@ -93,8 +76,6 @@ def read_config():
     except Exception as e:
         logger.error(f"Could not read config: {e}")
         sys.exit(1)
-
-  
 
 def download_report(config):
     logger = logging.getLogger(__name__)
@@ -154,16 +135,13 @@ def download_report(config):
             args.pop('expiry', None)
         except KeyError:
             pass
-            # print('no expiry in this cookie.  moving on.')
         logger.debug(f'args={args}')
         c.set(cookie['name'],
             cookie['value'],
             **args
             )
-    # pp.pprint(c)
 
     url = "https://littleshopofstitches.rainadmin.com/pos-app/customers/download-customers-csv.php"
-    # url = "http://192.168.0.12/pos-app/customers/download-customers-csv.php"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0'}
     print(f'Headers: {headers}')
     print(f'URL: {url}')
@@ -172,8 +150,6 @@ def download_report(config):
                     params={"type": "edit_custs"},
                     cookies=c)
     logger.debug(r.headers)
-    # print(r.content)
-    #local_filename = os.path.join(f'{local_path}', 'bulk_customers.csv')
     logger.info(f'Saving response to {local_filename}')
     with open(local_filename, 'w') as f:
         f.write(str(r.content.decode('utf-8')))
@@ -182,7 +158,6 @@ def parse_file(skipped, pdf_name, output_pdf):
     logger = logging.getLogger(__name__)
     logger.info('Reading file: {}'.format(local_filename))
 
-    # list to hold the addresses
     address_list = []
 
     logger.info('Next month: {}'.format(next_month))
@@ -191,7 +166,6 @@ def parse_file(skipped, pdf_name, output_pdf):
             address_input = reader(csvfile)
             headers = next(address_input)[0:]
 
-            # see if we can set the indices based on the headers
             lastname_index = headers.index('Last Name')
             firstname_index = headers.index('First Name')
             address_index = headers.index('Address')
@@ -227,7 +201,6 @@ def parse_file(skipped, pdf_name, output_pdf):
                             continue
 
                 if bday.month != next_month.month:
-                    # print('bday is {}, skipping'.format(bday))
                     continue
 
                 # If there is no name, skip it
