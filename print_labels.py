@@ -38,7 +38,7 @@ def parse_script_args(home_dir, local_path, local_filename):
     parser.add_argument('--debug',
                         action='store_true',
                         help='Enable debug logging.')
-   try:
+    try:
         args = parser.parse_args()
     except Exception as e:
         print(e)
