@@ -38,10 +38,7 @@ def parse_script_args(home_dir, local_path, local_filename):
     parser.add_argument('--debug',
                         action='store_true',
                         help='Enable debug logging.')
-    parser.add_argument('--pdf',
-                        dest='pdf_name',
-                        help='Use a different name for the final PDF file. Default is birthday_labels-yyyymm.pdf')
-    try:
+   try:
         args = parser.parse_args()
     except Exception as e:
         print(e)
@@ -324,12 +321,8 @@ def main():
     args = parse_script_args(home_dir, local_path, local_filename)
 
     configure_logging(args, local_path)
-    pdf_name = args.pdf_name
 
-    if not pdf_name:
-        pdf_name = f'birthday_labels-{next_month.year}{next_month.month:02d}.pdf'
-    else:
-        pdf_name = f'birthday_labels-{next_month.year}{next_month.month:02d}.pdf'
+    pdf_name = f'birthday_labels-{next_month.year}{next_month.month:02d}.pdf'
 
     output_pdf = os.path.join(local_path, pdf_name)
 
