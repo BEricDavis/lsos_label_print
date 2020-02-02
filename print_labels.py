@@ -17,36 +17,37 @@ from reportlab.platypus import TableStyle
 import shutil
 import webbrowser
 # with Gooey, it appears the script has to be launched with 'python <script>'
-from gooey import Gooey
+from gooey import Gooey, GooeyParser
 
-home_dir = os.path.expanduser('~')
 # How many months out do you want labels.  1 would be standard.
 months_out = 1
 # determine 'next' month
 next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 
-# try to get file from Downloads
-local_path = os.path.join(home_dir, 'Downloads')
-local_filename = os.path.join(f'{local_path}', '1433-edit-customers.csv')
-
 @Gooey
-def parse_script_args():
+def parse_script_args(home_dir, local_path, local_filename):
     logger = logging.getLogger(__name__)
     logger.info('parsing args')
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--pdf',
-                        dest='pdf_name',
-                        help='Use a different name for the final PDF file. Default is birthday_labels-yyyymm.pdf')
-    parser.add_argument('--local',
-                        action='store_true',
-                        help='Use a file that you have manually downloaded from LikeSew.')
+
+    parser = GooeyParser()
+
+    parser.add_argument('--localfile',
+                        dest='localfile',
+                        help='Use a file that you have manually downloaded from LikeSew.',
+                        widget='FileChooser')
     parser.add_argument('--debug',
                         action='store_true',
                         help='Enable debug logging.')
-    args = parser.parse_args()
+    parser.add_argument('--pdf',
+                        dest='pdf_name',
+                        help='Use a different name for the final PDF file. Default is birthday_labels-yyyymm.pdf')
+    try:
+        args = parser.parse_args()
+    except Exception as e:
+        print(e)
     return args
 
-def configure_logging(args):
+def configure_logging(args, local_path):
 
     log_level = 'INFO'
     if args.debug:
@@ -80,7 +81,7 @@ def read_config():
         logger.error(f"Could not read config: {e}")
         sys.exit(1)
 
-def download_report(config):
+def download_report(config, local_filename):
     logger = logging.getLogger(__name__)
     user = config['user']
     passwd = config['password']
@@ -93,8 +94,6 @@ def download_report(config):
             driver.get("https://www.thelittleshopofstitches.com/admin")
             # Selenium Chrome driver user aent is this:
             #192.168.0.14 - - [02/Feb/2020:10:34:48 -0500] "GET / HTTP/1.1" 200 396 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.130 Safari/537.36"
-
-            # driver.get('http://192.168.0.12/')
         except Exception as e:
             logger.error(f'Driver failed to get site: {e}')
     except Exception as e:
@@ -124,7 +123,6 @@ def download_report(config):
     # and pass them to requests, so it can perform the download.
     # get_cookies returns an array of dicts, one per cookie
     in_cookies = driver.get_cookies()
-    # pp.pprint(in_cookies)
 
     c = RequestsCookieJar()
     for cookie in in_cookies:
@@ -152,12 +150,12 @@ def download_report(config):
                     headers=headers,
                     params={"type": "edit_custs"},
                     cookies=c)
-    logger.debug(r.headers)
+    logger.debug(f'requests headers: {r.headers}')
     logger.info(f'Saving response to {local_filename}')
     with open(local_filename, 'w') as f:
         f.write(str(r.content.decode('utf-8')))
 
-def parse_file(skipped, pdf_name, output_pdf):
+def parse_file(skipped, pdf_name, output_pdf, local_filename):
     logger = logging.getLogger(__name__)
     logger.info('Reading file: {}'.format(local_filename))
 
@@ -319,9 +317,15 @@ def finish(output_pdf):
     print('#' * 40)
 
 def main():
-    args = parse_script_args()
-    configure_logging(args)
+    home_dir = os.path.expanduser('~')
+
+    local_path = os.path.join(home_dir, 'Downloads')
+    local_filename = os.path.join(f'{local_path}', '1433-edit-customers.csv')
+    args = parse_script_args(home_dir, local_path, local_filename)
+
+    configure_logging(args, local_path)
     pdf_name = args.pdf_name
+
     if not pdf_name:
         pdf_name = f'birthday_labels-{next_month.year}{next_month.month:02d}.pdf'
     else:
@@ -347,14 +351,15 @@ def main():
         logger.error(f'Could not open {skipped_file} for write')
         sys.exit(1)
 
- 
-    if args.local:
-        logger.info('Using local file')
+
+    if args.localfile:
+        logger.info(f'Using local file: {args.localfile}')
         print('Using local file')
+        local_filename = args.localfile
     else:
         logger.info('Retrieving file from website')
-        download_report(config)
-    parse_file(skipped, pdf_name, output_pdf)  
+        download_report(config, local_filename)
+    parse_file(skipped, pdf_name, output_pdf, local_filename)  
     finish(output_pdf)
     webbrowser.open(f'{skipped_file}')
     logger.info('FINISHED\n')
