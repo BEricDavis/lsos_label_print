@@ -8,7 +8,7 @@ from cx_Freeze import setup, Executable
 
 setup(
     name='LSOS Label Printer',
-    version='4.0',
+    version='4.1',
     description='Trying to print labels',
     executables=[Executable(script="print_labels.py")]
 )
