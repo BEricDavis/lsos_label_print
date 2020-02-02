@@ -38,11 +38,14 @@ def parse_script_args():
     logger.info('parsing args')
     parser = argparse.ArgumentParser()
     parser.add_argument('--pdf',
-                        dest='pdf_name')
+                        dest='pdf_name',
+                        help='Use a different name for the final PDF file')
     parser.add_argument('--debug',
-                        action='store_true')
+                        action='store_true',
+                        help='Enable debug logging.')
     parser.add_argument('--local',
-                        action='store_true')
+                        action='store_true',
+                        help='Use a file that you have manually downloaded from LikeSew.')
     args = parser.parse_args()
     return args
 
