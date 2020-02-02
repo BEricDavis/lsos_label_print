@@ -263,6 +263,8 @@ def parse_file(skipped, pdf_name, output_pdf):
     #                           f'birthday_labels_{next_month.year}{next_month.month:02d}.pdf')
 
     logger.info(f'Output going to: {output_pdf}')
+    # Each printer will need to have separate configs
+    # below config is for the Canon TS9100 Printer
     doc = reportlab.platypus.SimpleDocTemplate(filename=output_pdf,
                                             pagesize=letter,
                                             leftMargin=57,
