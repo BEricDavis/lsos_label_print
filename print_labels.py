@@ -30,6 +30,11 @@ def parse_script_args(home_dir, local_path, local_filename):
     logger.info('parsing args')
 
     parser = GooeyParser()
+    parser.add_argument('--date',
+                        dest='date',
+                        help='Select a date',
+                        widget='DateChooser'
+                        )
 
     parser.add_argument('--localfile',
                         dest='localfile',
@@ -319,6 +324,11 @@ def main():
     local_path = os.path.join(home_dir, 'Downloads')
     local_filename = os.path.join(f'{local_path}', '1433-edit-customers.csv')
     args = parse_script_args(home_dir, local_path, local_filename)
+
+    if args.date:
+
+        next_month = args.date
+        next_month = dt.datetime.strptime(next_month, '%Y-%m-%d')
 
     configure_logging(args, local_path)
 
