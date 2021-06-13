@@ -2,3 +2,6 @@
 *.log
 *.conf
 build
+venv
+**/build/
+build/
