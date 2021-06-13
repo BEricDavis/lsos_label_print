@@ -83,7 +83,23 @@ def read_config():
         logger.error(f"Could not read config: {e}")
         sys.exit(1)
 
-def download_report(config, local_filename):
+def download_report():
+    logger = logging.getLogger(__name__)
+    with open('shopify-api-key') as f:
+        apikey = f.read().rstrip()
+    
+    customer_report_url = f'https://{apikey}@the-little-shop-of-stitches.myshopify.com/admin/api/2021-04/customers.json'
+    logger.debug(customer_report_url)
+    response = requests.get(customer_report_url)
+    print(response.headers)
+    body_json = response.json()
+    print(body_json) 
+
+
+
+    sys.exit(0)
+
+def download_report_v1(config, local_filename):
     logger = logging.getLogger(__name__)
     user = config['user']
     passwd = config['password']
@@ -362,7 +378,8 @@ def main():
         local_filename = args.localfile
     else:
         logger.info('Retrieving file from website')
-        download_report(config, local_filename)
+        #download_report_v1(config, local_filename)
+        download_report()
     parse_file(skipped, pdf_name, output_pdf, local_filename)  
     finish(output_pdf)
     webbrowser.open(f'{skipped_file}')
