@@ -33,6 +33,9 @@ def parse_script_args(home_dir, local_path, local_filename):
     #parser = GooeyParser()
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--month',
+                        dest='month',
+                        help='Choose the month for the report.')
     parser.add_argument('--date',
                         dest='date',
                         help='Choose any date in the month for which you wosh to generate labels.',)
@@ -101,11 +104,14 @@ def download_report(local_filename):
         csv_writer = writer(data_file)
         count = 0
         for customer in customer_data:
-            if count == 0:
-                header = customer.keys()
-                csv_writer.writerow(header)
-                count += 1
-            csv_writer.writerow(customer.values())
+            if 'October' in customer['tags']:
+                for address in customer['addresses']:
+                    if address['default'] is True:
+                        if count == 0:
+                            header = address.keys()
+                            csv_writer.writerow(header)
+                            count += 1
+                        csv_writer.writerow(address.values())
 
 
 
