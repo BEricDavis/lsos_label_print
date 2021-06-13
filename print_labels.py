@@ -24,26 +24,22 @@ months_out = 1
 # determine 'next' month
 next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 
-@Gooey
+#@Gooey
 def parse_script_args(home_dir, local_path, local_filename):
     logger = logging.getLogger(__name__)
     logger.info('parsing args')
 
-    parser = GooeyParser()
-    parser.add_argument('--date',
-                        dest='date',
-                        help='Select a date',
-                        widget='DateChooser'
-                        )
+    #parser = GooeyParser()
+    parser = argparse.ArgumentParser()
 
     parser.add_argument('--date',
                         dest='date',
-                        help='Choose any date in the month for which you wosh to generate labels.',
-                        widget='DateChooser')
+                        help='Choose any date in the month for which you wosh to generate labels.',)
+                        #widget='DateChooser')
     parser.add_argument('--localfile',
                         dest='localfile',
-                        help='Use a file that you have manually downloaded from LikeSew.',
-                        widget='FileChooser')
+                        help='Use a file that you have manually downloaded from LikeSew.',)
+                        #widget='FileChooser')
     parser.add_argument('--debug',
                         action='store_true',
                         help='Enable debug logging.')
