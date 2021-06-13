@@ -25,6 +25,9 @@ months_out = 1
 # determine 'next' month
 next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 
+months = ['January', 'February', 'March', 'April','May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+
 #@Gooey
 def parse_script_args(home_dir, local_path, local_filename):
     logger = logging.getLogger(__name__)
@@ -104,7 +107,12 @@ def download_report(local_filename):
         csv_writer = writer(data_file)
         count = 0
         for customer in customer_data:
-            if 'October' in customer['tags']:
+            bday = 0
+            logger.debug(f'CUSTOMER: customer')
+            for tag in customer['tags'].split(','):
+                if tag in months:
+                    bday = 1
+            if bday == 1:
                 for address in customer['addresses']:
                     if address['default'] is True:
                         if count == 0:
