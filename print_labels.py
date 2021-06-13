@@ -120,84 +120,7 @@ def download_report(local_filename):
                             csv_writer.writerow(header)
                             count += 1
                         csv_writer.writerow(address.values())
-
-
-
-    sys.exit(0)
-
-def download_report_v1(config, local_filename):
-    logger = logging.getLogger(__name__)
-    user = config['user']
-    passwd = config['password']
-    options = webdriver.ChromeOptions()
-    options.add_argument('headless')
-    options.add_experimental_option('excludeSwitches', ['enable-logging'])
-    try:
-        driver = webdriver.Chrome('./drivers/chromedriver.exe', options=options)
-        try:
-            driver.get("https://www.thelittleshopofstitches.com/admin")
-            # Selenium Chrome driver user aent is this:
-            #192.168.0.14 - - [02/Feb/2020:10:34:48 -0500] "GET / HTTP/1.1" 200 396 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.130 Safari/537.36"
-        except Exception as e:
-            logger.error(f'Driver failed to get site: {e}')
-    except Exception as e:
-        logger.error(f'Failed to create driver: {e}')
-        sys.exit(1)
-
-    username = driver.find_element_by_xpath('//*[@id="username"]')
-    try:
-        login_button = driver.find_element_by_css_selector('#submitBtn')
-        logger.info('Finding login button')
-    except Exception as e:
-        logger.error(f"Couldn't find the login button: {e}")
-    actions = action_chains.ActionChains(driver)
-    actions.send_keys(keys.Keys.F12)
-    actions.move_to_element(username)
-    actions.send_keys_to_element(username, user)
-    actions.send_keys_to_element(username, keys.Keys.TAB)
-    actions.send_keys(passwd)
-    actions.send_keys(keys.Keys.ENTER)
-    actions.perform()
-    if 'Home' in driver.page_source:
-        logger.info('Made it to the home page')
-    else:
-        logger.error('Failed to log in')
-        sys.exit()
-    # Selenium can't interact with the system dialog for file downloads, so get the cookies
-    # and pass them to requests, so it can perform the download.
-    # get_cookies returns an array of dicts, one per cookie
-    in_cookies = driver.get_cookies()
-
-    c = RequestsCookieJar()
-    for cookie in in_cookies:
-        # pp.pprint(f'cookie={cookie}')
-        args = {k.lower(): cookie[k] for k in cookie if k not in ['name', 'value']}
-        # httpOnly is for browsers? try rmoving it
-        args.pop('httponly', None)
-        # requests expects 'expires' and noy 'expiry'
-        try:
-            args['expires']=args['expiry']
-            args.pop('expiry', None)
-        except KeyError:
-            pass
-        logger.debug(f'args={args}')
-        c.set(cookie['name'],
-            cookie['value'],
-            **args
-            )
-
-    url = "https://littleshopofstitches.rainadmin.com/pos-app/customers/download-customers-csv.php"
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0'}
-    logger.debug(f'Headers: {headers}')
-    logger.debug(f'URL: {url}')
-    r = requests.get(url,
-                    headers=headers,
-                    params={"type": "edit_custs"},
-                    cookies=c)
-    logger.debug(f'requests headers: {r.headers}')
-    logger.info(f'Saving response to {local_filename}')
-    with open(local_filename, 'w') as f:
-        f.write(str(r.content.decode('utf-8')))
+    # sys.exit(0)
 
 def parse_file(skipped, pdf_name, output_pdf, local_filename):
     logger = logging.getLogger(__name__)
@@ -205,48 +128,21 @@ def parse_file(skipped, pdf_name, output_pdf, local_filename):
 
     address_list = []
 
-    logger.info('Next month: {}'.format(next_month))
     try:
         with open(local_filename, newline="") as csvfile:
             address_input = reader(csvfile)
             headers = next(address_input)[0:]
 
-            lastname_index = headers.index('Last Name')
-            firstname_index = headers.index('First Name')
-            address_index = headers.index('Address')
-            city_index = headers.index('City')
-            state_index = headers.index('State')
-            zip_index = headers.index('Zip')
-            birthday_index = headers.index('Birthday')
+            # shopify
+
+            lastname_index = headers.index('last_name')
+            firstname_index = headers.index('first_name')
+            address_index = headers.index('address1')
+            city_index = headers.index('city')
+            state_index = headers.index('province_code')
+            zip_index = headers.index('zip')
 
             for row in address_input:
-
-                # if the birthday is null skip it
-                if row[birthday_index] in (None, ''):
-                    continue
-
-                try:
-                    bday = dt.datetime.strptime(row[birthday_index], '%m/%d/%Y')
-                except ValueError as err:
-                    logger.debug('Unexpected date format: {}'.format(row[birthday_index]))
-                    logger.debug('Trying %m/%d/%y')
-                    try:
-                        bday = dt.datetime.strptime(row[birthday_index], '%m/%d/%y')
-                    except ValueError as err:
-                        logger.debug('Trying %m/%d')
-                        try:
-                            bday = dt.datetime.strptime(row[birthday_index], '%m/%d')
-                        except:
-                            logger.debug('Trying %b-%m')
-                            try:
-                                bday = dt.datetime.strptime(row[birthday_index], '%d-%b')
-                            except ValueError as err:
-                                logger.error('Skipping invalid birthday: {} {}: {}'.format(row[2], row[1], row[birthday_index]))
-                                skipped.write('{:20}: {}'.format('INVALID BIRTHDAY', format_row(row)))
-                            continue
-
-                if bday.month != next_month.month:
-                    continue
 
                 # If there is no name, skip it
                 if row[firstname_index] in (None, "") and row[lastname_index] in (None, ""):
@@ -270,16 +166,18 @@ def parse_file(skipped, pdf_name, output_pdf, local_filename):
                     continue
 
                 address_dict = {key: value for key, value in zip(headers, row)}
-                mailing_address = "{} {}\n{}\n{}, {} {}".format(address_dict['First Name'],
-                                                                address_dict['Last Name'],
-                                                                address_dict['Address'],
-                                                                address_dict['City'],
-                                                                address_dict['State'],
-                                                                address_dict['Zip'])
+                logger.info(address_dict)
+                mailing_address = "{} {}\n{}\n{}, {} {}".format(address_dict['first_name'],
+                                                                address_dict['last_name'],
+                                                                address_dict['address1'],
+                                                                address_dict['city'],
+                                                                address_dict['province'],
+                                                                address_dict['zip'])
 
                 address_list.append(mailing_address)
+
     except Exception as e:
-        logger.error('Could not open {}: {}'.format(local_filename, e))
+        logger.exception('Could not open {}: {}'.format(local_filename, e))
         print(e)
         sys.exit(1)
     logger.info('Found {} addresses'.format(len(address_list)))
