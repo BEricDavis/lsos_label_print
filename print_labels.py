@@ -9,7 +9,8 @@ import sys
 import json
 import pprint as pp
 import logging
-from csv import reader
+
+from csv import reader, writer
 import reportlab
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import Table
@@ -83,17 +84,28 @@ def read_config():
         logger.error(f"Could not read config: {e}")
         sys.exit(1)
 
-def download_report():
+def download_report(local_filename):
     logger = logging.getLogger(__name__)
     with open('shopify-api-key') as f:
         apikey = f.read().rstrip()
     
     customer_report_url = f'https://{apikey}@the-little-shop-of-stitches.myshopify.com/admin/api/2021-04/customers.json'
     logger.debug(customer_report_url)
-    response = requests.get(customer_report_url)
-    print(response.headers)
-    body_json = response.json()
-    print(body_json) 
+    r = requests.get(customer_report_url)
+    logger.debug(f'Headers: {r.headers}')
+    body_json = r.json()
+    # customer_data is a list of dicts containing customer info
+    customer_data = body_json['customers']
+
+    with open(local_filename, 'w', newline='') as data_file:
+        csv_writer = writer(data_file)
+        count = 0
+        for customer in customer_data:
+            if count == 0:
+                header = customer.keys()
+                csv_writer.writerow(header)
+                count += 1
+            csv_writer.writerow(customer.values())
 
 
 
@@ -379,7 +391,7 @@ def main():
     else:
         logger.info('Retrieving file from website')
         #download_report_v1(config, local_filename)
-        download_report()
+        download_report(local_filename)
     parse_file(skipped, pdf_name, output_pdf, local_filename)  
     finish(output_pdf)
     webbrowser.open(f'{skipped_file}')
