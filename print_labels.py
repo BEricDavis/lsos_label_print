@@ -327,7 +327,8 @@ def main():
 
     if args.date:
 
-        next_month = args.date
+        global next_month 
+        next_month= args.date
         next_month = dt.datetime.strptime(next_month, '%Y-%m-%d')
 
     configure_logging(args, local_path)
