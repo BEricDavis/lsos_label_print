@@ -31,6 +31,10 @@ def parse_script_args(home_dir, local_path, local_filename):
 
     parser = GooeyParser()
 
+    parser.add_argument('--date',
+                        dest='date',
+                        help='Choose any date in the month for which you wosh to generate labels.',
+                        widget='DateChooser')
     parser.add_argument('--localfile',
                         dest='localfile',
                         help='Use a file that you have manually downloaded from LikeSew.',
