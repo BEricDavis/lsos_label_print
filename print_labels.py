@@ -168,12 +168,12 @@ def parse_file(skipped, pdf_name, output_pdf, local_filename):
                     continue
 
                 address_dict = {key: value for key, value in zip(headers, row)}
-                logger.info(address_dict)
+                logger.debug(address_dict)
                 mailing_address = "{} {}\n{}\n{}, {} {}".format(address_dict['first_name'],
                                                                 address_dict['last_name'],
                                                                 address_dict['address1'],
                                                                 address_dict['city'],
-                                                                address_dict['province'],
+                                                                address_dict['province_code'],
                                                                 address_dict['zip'])
 
                 address_list.append(mailing_address)
