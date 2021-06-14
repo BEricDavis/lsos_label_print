@@ -99,6 +99,8 @@ def download_report(local_filename):
     logger.debug(customer_report_url)
     r = requests.get(customer_report_url)
     logger.debug(f'Headers: {r.headers}')
+    link_header = r.headers.get('Link')
+    logger.info(link_header)
     body_json = r.json()
     # customer_data is a list of dicts containing customer info
     customer_data = body_json['customers']
