@@ -92,26 +92,6 @@ def read_config():
         logger.error(f"Could not read config: {e}")
         sys.exit(1)
 
-def get_customersv1(url, page_info, apikey, full_customer_list):
-    logger = logging.getLogger(__name__)
-    cache = page_info
-    r = requests.get(url)
-    body_json = r.json()
-    logger.debug(body_json)
-    link_header = r.headers.get('Link')
-    logger.info(f'LINK: {link_header}')
-    full_customer_list.append(body_json['customers'])
-    for _ in link_header.split(','):
-        if _.find('next') > 0:
-            #url = _.split(';')[0].strip('<>').replace('https://', f'https://{apikey}@') + "?limit=250"
-            page_info = _.split(';')[0].strip('<>').split('page_info=')[1]
-            print(page_info)
-
-    if cache != page_info:
-        return get_customers(url, page_info, apikey, full_customer_list)
-
-    return None
-
 def fetch_customers(url, apikey, limit=250, page_info='', chunk=1, customers = ''):
     # cache the page_info we receive and use it for the query if we got one
     cached_page_info = page_info
@@ -145,58 +125,6 @@ def fetch_customers(url, apikey, limit=250, page_info='', chunk=1, customers = '
         return fetch_customers( base_url, apikey, limit, page_info, chunk=chunk+1, customers=customers)
 
     return customers
-
-def get_customers(url, apikey, page_info='', limit='', full_customer_list='' ):
-    """Fetch products recursively."""
-    logger = logging.getLogger(__name__)
-    cache = page_info.strip()
-    logger.info(f'url: {url}')
-    # GET https://{shop}.myshopify.com/admin/api/2019-07/products.json?page_info=hijgklmn&limit=3
-    logger.info(f'cache: {cache}')
-    r = requests.get(url)
-    body_json = r.json()
-    link_header = r.headers.get('Link')
-    logger.info(f'LINK: {link_header}')
-    full_customer_list.append(body_json['customers'])
-
-    # products = shopify.Product.find(limit=limit, page_info=page_info)
-    # cursor = shopify.ShopifyResource.connection.response.headers.get('Link')
-    for _ in link_header.split(','):
-        if _.find('next') > 0:
-            page_info = _.split(';')[0].strip('<>').split('page_info=')[1]
-            logger.info(f'page_info: {page_info}')
-    #print('chunk fetched: %s' % chunk)
-    if cache != page_info:
-        logger.info(f'cache != page_info: {cache != page_info}')
-        return get_customers(url, apikey, page_info, limit=limit, full_customer_list=full_customer_list)
-    return None    
-
-
-def download_report(url, apikey, full_customer_list):
-    logger = logging.getLogger(__name__)
-
-    rel = ''
-    logger.info(url)
-    r = requests.get(url)
-    logger.debug(f'Headers: {r.headers}')
-    body_json = r.json()
-    logger.info(body_json)
-    # customer_data is a list of dicts containing customer info
-    customer_data = body_json['customers']
-    full_customer_list.append(customer_data)
-
-    link_header = r.headers.get('Link')
-    next_page_url, rel = link_header.split(';')
-    next_page_url = next_page_url.lstrip('<').rstrip('>').replace('https://', f'https://{apikey}@') + "?limit=250"
-    logger.info(next_page_url)
-    logger.info(rel)
-
-    while rel:
-        logger.info('calling download_report')
-        download_report(next_page_url, apikey, full_customer_list)
-
-    print(f'{full_customer_list}')
-
 
 def write_customer_data(customer_data, local_filename):
     logger = logging.getLogger(__name__)
