@@ -39,7 +39,7 @@ def parse_script_args(home_dir, local_path, local_filename):
 
     parser.add_argument('--month',
                         dest='month',
-                        default='July',
+                        default='April',
                         help='Choose the month for the report.')
     parser.add_argument('--date',
                         dest='date',
@@ -93,9 +93,11 @@ def read_config():
         sys.exit(1)
 
 def fetch_customers(url, apikey, limit=250, page_info='', chunk=1, customers = ''):
+    logger = logging.getLogger(__name__)
     # cache the page_info we receive and use it for the query if we got one
     cached_page_info = page_info
     base_url = url
+    logger.debug(f'Chunk {chunk}')
     url += f'?limit={limit}&page_info={page_info}'
     response = requests.get(f'{url}')
     response.raise_for_status()
@@ -148,6 +150,105 @@ def write_customer_data(customer_data, local_filename):
                             count += 1
                         csv_writer.writerow(address.values())
     # sys.exit(0)
+
+def parse_data(args, skipped, customer_list):
+    logger = logging.getLogger(__name__)
+    logger.info(f'Searching {len(customer_list)} customers for {args.month}')
+    
+    for customer in customer_list:
+        # if there are no tags, remove the customer and continue
+        if len(customer['tags']) == 0:
+            customer_list.remove(customer)
+            continue
+        # for each tag, if the tag equals the 'month' argument, leave the customer alone and continue
+        for tag in customer['tags'].split(','):
+            if tag == args.month:
+                logger.info(customer)
+                continue
+            else:
+                customer_list.remove(customer)
+                continue
+
+        
+        if customer['first_name'] in (None, ""):
+            skipped.write('{:20}: {}\n'.format('MISSING NAME', customer))
+            customer_list.remove(customer)
+            continue
+
+        if customer['last_name'] in (None, ""):
+            skipped.write('{:20}: {}\n'.format('MISSING NAME', customer))
+            customer_list.remove(customer)
+            continue
+
+        if customer['address1'] in (None, ""):
+            skipped.write('{:20}: {}\n'.format('NO ADDRESS', customer))
+            continue
+        # if there is no city, skip it
+        if customer['city'] in (None, ""):
+            skipped.write('{:20}: {}\n'.format('NO CITY', customer))
+            continue
+        # if there is no state skip it
+        if customer['province_code'] in (None, ""):
+            skipped.write('{:20}: {}\n'.format('NO STATE', customer))
+            continue
+        # if there is no zip, we don't have a valid address
+        if customer['zip'] in (None, ""):
+            skipped.write('{:20}: {}\n'.format('NO ZIP', customer))
+            continue
+    logger.info(f'{len(customer_list)} customers remaining')
+    return customer_list            
+
+def create_pdf(customer_list, pdf_name, output_pdf):
+    logger = logging.getLogger(__name__)
+    if len(customer_list) == 30:
+        fill_value = 0
+    elif len(customer_list) < 30:
+        fill_value = 30 - len(customer_list)
+    else:
+        fill_value = 30 - (len(customer_list) % 30)
+
+    logger.info('Adding {} empty cells'.format(fill_value))
+
+    fill_list = ['' for x in range(0, fill_value)]
+
+    customer_list.extend(fill_list)
+    # this breaks lists into 3
+    logger.info('Chunking address list')
+    chunks = [customer_list[x:x+3] for x in range(0, len(customer_list), 3)]
+
+    # much help from https://www.blog.pythonlibrary.org/2010/09/21/reportlab-tables-creating-tables-in-pdfs-with-python/
+    # doc = reportlab.platypus.SimpleDocTemplate("output/birthday_labels_{}{:02d}.pdf".format(
+    # output_pdf = os.path.join(f'{local_path}',
+    #                           f'birthday_labels_{next_month.year}{next_month.month:02d}.pdf')
+
+    logger.info(f'Output going to: {output_pdf}')
+    # Each printer will need to have separate configs
+    # below config is for the Canon TS9100 Printer
+    doc = reportlab.platypus.SimpleDocTemplate(filename=output_pdf,
+                                            pagesize=letter,
+                                            leftMargin=57,
+                                            rightMargin=11,
+                                            topMargin=11,
+                                            bottomMargin=10)
+
+    width, height = letter
+    t = Table(chunks,
+            rowHeights=74,
+            colWidths=200)
+
+    logger.info('address list length: {}'.format(len(customer_list)))
+    num_rows = int(len(customer_list)/3)
+    logger.info('rows: {}'.format(num_rows))
+
+    logger.info('Setting Table Style')
+    t.setStyle(TableStyle([('FONT', (0, 0), (2, num_rows - 1), 'Helvetica', 12)]))
+    elements = [t]
+    try:
+        doc.build(elements)
+    except Exception as e:
+        logger.exception(e)
+        logger.error(vars(doc))
+        sys.exit(1)
 
 def parse_file(args, skipped, pdf_name, output_pdf, local_filename):
     logger = logging.getLogger(__name__)
@@ -331,13 +432,15 @@ def main():
         print('Using local file')
         local_filename = args.localfile
     else:
-        logger.info('Retrieving file from website')
+        logger.info('Fetching customers from Shopify')
         #download_report_v1(config, local_filename)
         customer_list = fetch_customers( url=url, apikey=apikey, page_info='', customers=customers)
-        logger.info(customer_list)
-        sys.exit()
+        # logger.info(customer_list)
+        # sys.exit()
         #write_customer_data(args, local_filename)
-    parse_file(args, skipped, pdf_name, output_pdf, local_filename)  
+    customer_list = parse_data(args, skipped, customer_list)  
+    logger.info(f'Found {len(customer_list)} customers')
+    create_pdf(customer_list, pdf_name, output_pdf)
     finish(output_pdf)
     webbrowser.open(f'{skipped_file}')
     logger.info('FINISHED\n')
