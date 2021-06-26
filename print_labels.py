@@ -128,7 +128,8 @@ def fetch_customers(url, apikey, limit=250, page_info='', chunk=1, customers = '
             'address2': entry['default_address']['address2'],
             'city': entry['default_address']['city'],
             'province_code': entry['default_address']['province_code'],
-            'zip': entry['default_address']['zip']
+            'zip': entry['default_address']['zip'],
+            'tags': entry['tags']
         }
         customers.append(customer)
 
