@@ -1,4 +1,5 @@
 import argparse
+from reportlab.platypus.doctemplate import NextPageTemplate
 from selenium import webdriver
 from selenium.webdriver.common import action_chains, keys
 import datetime as dt
@@ -38,6 +39,7 @@ def parse_script_args(home_dir, local_path, local_filename):
 
     parser.add_argument('--month',
                         dest='month',
+                        default='July',
                         help='Choose the month for the report.')
     parser.add_argument('--date',
                         dest='date',
@@ -90,21 +92,113 @@ def read_config():
         logger.error(f"Could not read config: {e}")
         sys.exit(1)
 
-def download_report(local_filename):
+def get_customersv1(url, page_info, apikey, full_customer_list):
     logger = logging.getLogger(__name__)
-    with open('shopify-api-key') as f:
-        apikey = f.read().rstrip()
-    
-    customer_report_url = f'https://{apikey}@the-little-shop-of-stitches.myshopify.com/admin/api/2021-04/customers.json'
-    logger.debug(customer_report_url)
-    r = requests.get(customer_report_url)
-    logger.debug(f'Headers: {r.headers}')
-    link_header = r.headers.get('Link')
-    logger.info(link_header)
+    cache = page_info
+    r = requests.get(url)
     body_json = r.json()
+    logger.debug(body_json)
+    link_header = r.headers.get('Link')
+    logger.info(f'LINK: {link_header}')
+    full_customer_list.append(body_json['customers'])
+    for _ in link_header.split(','):
+        if _.find('next') > 0:
+            #url = _.split(';')[0].strip('<>').replace('https://', f'https://{apikey}@') + "?limit=250"
+            page_info = _.split(';')[0].strip('<>').split('page_info=')[1]
+            print(page_info)
+
+    if cache != page_info:
+        return get_customers(url, page_info, apikey, full_customer_list)
+
+    return None
+
+def fetch_customers(url, apikey, limit=250, page_info='', chunk=1, customers = ''):
+    # cache the page_info we receive and use it for the query if we got one
+    cached_page_info = page_info
+    base_url = url
+    url += f'?limit={limit}&page_info={page_info}'
+    response = requests.get(f'{url}')
+    response.raise_for_status()
+    # customers.append(response.json()['customers'])
+    for entry in response.json()['customers']:
+        customer = {
+            'first_name': entry['first_name'],
+            'last_name': entry['last_name'],
+            'address1': entry['default_address']['address1'],
+            'address2': entry['default_address']['address2'],
+            'city': entry['default_address']['city'],
+            'province_code': entry['default_address']['province_code'],
+            'zip': entry['default_address']['zip']
+        }
+        customers.append(customer)
+
+    link_header = response.headers.get('Link')
+    # update the page_info with the one fromr the link header
+    links = link_header.split(',')
+    if len(links) > 1:
+        page_info = links[1].split('page_info=')[1].split(';')[0].strip('<>')
+    elif 'next' in links[0]:
+        page_info = links[0].split('page_info=')[1].split(';')[0].strip('<>')
+
+    if cached_page_info != page_info:
+        return fetch_customers( base_url, apikey, limit, page_info, chunk=chunk+1, customers=customers)
+
+    return customers
+
+def get_customers(url, apikey, page_info='', limit='', full_customer_list='' ):
+    """Fetch products recursively."""
+    logger = logging.getLogger(__name__)
+    cache = page_info.strip()
+    logger.info(f'url: {url}')
+    # GET https://{shop}.myshopify.com/admin/api/2019-07/products.json?page_info=hijgklmn&limit=3
+    logger.info(f'cache: {cache}')
+    r = requests.get(url)
+    body_json = r.json()
+    link_header = r.headers.get('Link')
+    logger.info(f'LINK: {link_header}')
+    full_customer_list.append(body_json['customers'])
+
+    # products = shopify.Product.find(limit=limit, page_info=page_info)
+    # cursor = shopify.ShopifyResource.connection.response.headers.get('Link')
+    for _ in link_header.split(','):
+        if _.find('next') > 0:
+            page_info = _.split(';')[0].strip('<>').split('page_info=')[1]
+            logger.info(f'page_info: {page_info}')
+    #print('chunk fetched: %s' % chunk)
+    if cache != page_info:
+        logger.info(f'cache != page_info: {cache != page_info}')
+        return get_customers(url, apikey, page_info, limit=limit, full_customer_list=full_customer_list)
+    return None    
+
+
+def download_report(url, apikey, full_customer_list):
+    logger = logging.getLogger(__name__)
+
+    rel = ''
+    logger.info(url)
+    r = requests.get(url)
+    logger.debug(f'Headers: {r.headers}')
+    body_json = r.json()
+    logger.info(body_json)
     # customer_data is a list of dicts containing customer info
     customer_data = body_json['customers']
+    full_customer_list.append(customer_data)
 
+    link_header = r.headers.get('Link')
+    next_page_url, rel = link_header.split(';')
+    next_page_url = next_page_url.lstrip('<').rstrip('>').replace('https://', f'https://{apikey}@') + "?limit=250"
+    logger.info(next_page_url)
+    logger.info(rel)
+
+    while rel:
+        logger.info('calling download_report')
+        download_report(next_page_url, apikey, full_customer_list)
+
+    print(f'{full_customer_list}')
+
+
+def write_customer_data(customer_data, local_filename):
+    logger = logging.getLogger(__name__)
     with open(local_filename, 'w', newline='') as data_file:
         csv_writer = writer(data_file)
         count = 0
@@ -113,8 +207,10 @@ def download_report(local_filename):
             logger.debug(f'CUSTOMER: customer')
             for tag in customer['tags'].split(','):
                 if tag in months:
-                    bday = 1
-            if bday == 1:
+                    bday = tag
+                else:
+                    logger.debug(f'{customer} has invalid birthday: {bday}')
+            if bday == args.month:
                 for address in customer['addresses']:
                     if address['default'] is True:
                         if count == 0:
@@ -124,7 +220,7 @@ def download_report(local_filename):
                         csv_writer.writerow(address.values())
     # sys.exit(0)
 
-def parse_file(skipped, pdf_name, output_pdf, local_filename):
+def parse_file(args, skipped, pdf_name, output_pdf, local_filename):
     logger = logging.getLogger(__name__)
     logger.info('Reading file: {}'.format(local_filename))
 
@@ -266,7 +362,10 @@ def main():
     local_path = os.path.join(home_dir, 'Downloads')
     local_filename = os.path.join(f'{local_path}', '1433-edit-customers.csv')
     args = parse_script_args(home_dir, local_path, local_filename)
-
+    with open('shopify-api-key') as f:
+        apikey = f.read().rstrip()
+    url = f'https://{apikey}@the-little-shop-of-stitches.myshopify.com/admin/api/2021-04/customers.json'
+    customers = []
     if args.date:
 
         global next_month 
@@ -305,8 +404,11 @@ def main():
     else:
         logger.info('Retrieving file from website')
         #download_report_v1(config, local_filename)
-        download_report(local_filename)
-    parse_file(skipped, pdf_name, output_pdf, local_filename)  
+        customer_list = fetch_customers( url=url, apikey=apikey, page_info='', customers=customers)
+        logger.info(customer_list)
+        sys.exit()
+        #write_customer_data(args, local_filename)
+    parse_file(args, skipped, pdf_name, output_pdf, local_filename)  
     finish(output_pdf)
     webbrowser.open(f'{skipped_file}')
     logger.info('FINISHED\n')
