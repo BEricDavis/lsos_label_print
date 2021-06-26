@@ -6,3 +6,5 @@ venv
 **/build/
 build/
 .vscode/settings.json
+shopify-api-key
+*.pyc
