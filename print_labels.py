@@ -1,10 +1,7 @@
 import argparse
 from reportlab.platypus.doctemplate import NextPageTemplate
-from selenium import webdriver
-from selenium.webdriver.common import action_chains, keys
 import datetime as dt
 import requests
-from requests.cookies import RequestsCookieJar
 import os
 import sys
 import json
@@ -133,8 +130,8 @@ def parse_data(args, skipped, customer_list):
     logger.info(f'Searching {len(customer_list)} customers for {args.month}')
     address_list = []
     for customer in customer_list:
-        logger.info(f'Checking: {customer}')
-        # for each tag, if the tag equals the 'month' argument, leave the customer alone and continue
+        logger.debug(f'Checking: {customer}')
+
         for tag in customer['tags'].split(','):
             if tag == args.month:
                 logger.info(f'Matched {args.month}: {customer["first_name"]} {customer["last_name"]}')
@@ -185,10 +182,7 @@ def parse_data(args, skipped, customer_list):
                     # customer_list.remove(customer)
                     logger.info(f'NO TAGS: {customer["first_name"]} {customer["last_name"]}')
                     continue
-                # # for each tag, if the tag equals the 'month' argument, leave the customer alone and continue
-                # for tag in customer['tags'].split(','):
-                #     if tag == args.month:
-                #         logger.info(f'Matched {args.month}: {customer["first_name"]} {customer["last_name"]}')
+
                 logger.info(f'Adding customer to mailing list: {customer}')
                 mailing_address = "{} {}\n{}\n{}, {} {}".format(customer['first_name'],
                                                         customer['last_name'],
