@@ -157,58 +157,61 @@ def parse_data(args, skipped, customer_list):
     address_list = []
     for customer in customer_list:
         logger.info(f'Checking: {customer}')
-
-
-        
-        if customer['first_name'] in (None, ""):
-            skipped.write('{:20}: {}\n'.format('MISSING NAME', customer))
-            logger.info(f'MISSING NAME: {customer}')
-            # customer_list.remove(customer)
-            continue
-
-        if customer['last_name'] in (None, ""):
-            skipped.write('{:20}: {}\n'.format('MISSING NAME', customer))
-            logger.info(f'MISSING NAME: {customer}')
-            # customer_list.remove(customer)
-            continue
-
-        if customer['address1'] in (None, ""):
-            skipped.write('{:20}: {}\n'.format('NO ADDRESS', customer))
-            logger.info(f'MISSING ADDRESS: {customer["first_name"]} {customer["last_name"]}')
-            # customer_list.remove(customer)
-            continue
-        if customer['address2'] not in (None, ""):
-            customer['address1'] = f'{customer["address1"]}\n{customer["address2"]}'
-
-        # if there is no city, skip it
-        if customer['city'] in (None, ""):
-            skipped.write('{:20}: {}\n'.format('NO CITY', customer))
-            logger.info(f'MISSING CITY: {customer["first_name"]} {customer["last_name"]}')
-            # customer_list.remove(customer)
-            continue
-
-        # if there is no state skip it
-        if customer['province_code'] in (None, ""):
-            skipped.write('{:20}: {}\n'.format('NO STATE', customer))
-            logger.info(f'MISSING CITY: {customer["first_name"]} {customer["last_name"]}')
-            # customer_list.remove(customer)
-            continue
-
-        # if there is no zip, we don't have a valid address
-        if customer['zip'] in (None, ""):
-            skipped.write('{:20}: {}\n'.format('NO ZIP', customer))
-            logger.info(f'MISSING ZIP: {customer["first_name"]} {customer["last_name"]}')
-            # customer_list.remove(customer)
-            continue
-
-        if len(customer['tags']) == 0:
-            # customer_list.remove(customer)
-            logger.info(f'NO TAGS: {customer["first_name"]} {customer["last_name"]}')
-            continue
         # for each tag, if the tag equals the 'month' argument, leave the customer alone and continue
         for tag in customer['tags'].split(','):
             if tag == args.month:
                 logger.info(f'Matched {args.month}: {customer["first_name"]} {customer["last_name"]}')
+
+        
+                if customer['first_name'] in (None, ""):
+                    skipped.write('{:20}: {}\n'.format('MISSING NAME', customer))
+                    logger.info(f'MISSING NAME: {customer}')
+                    # customer_list.remove(customer)
+                    continue
+
+                if customer['last_name'] in (None, ""):
+                    skipped.write('{:20}: {}\n'.format('MISSING NAME', customer))
+                    logger.info(f'MISSING NAME: {customer}')
+                    # customer_list.remove(customer)
+                    continue
+
+                if customer['address1'] in (None, ""):
+                    skipped.write('{:20}: {}\n'.format('NO ADDRESS', customer))
+                    logger.info(f'MISSING ADDRESS: {customer["first_name"]} {customer["last_name"]}')
+                    # customer_list.remove(customer)
+                    continue
+                if customer['address2'] not in (None, ""):
+                    customer['address1'] = f'{customer["address1"]}\n{customer["address2"]}'
+
+                # if there is no city, skip it
+                if customer['city'] in (None, ""):
+                    skipped.write('{:20}: {}\n'.format('NO CITY', customer))
+                    logger.info(f'MISSING CITY: {customer["first_name"]} {customer["last_name"]}')
+                    # customer_list.remove(customer)
+                    continue
+
+                # if there is no state skip it
+                if customer['province_code'] in (None, ""):
+                    skipped.write('{:20}: {}\n'.format('NO STATE', customer))
+                    logger.info(f'MISSING CITY: {customer["first_name"]} {customer["last_name"]}')
+                    # customer_list.remove(customer)
+                    continue
+
+                # if there is no zip, we don't have a valid address
+                if customer['zip'] in (None, ""):
+                    skipped.write('{:20}: {}\n'.format('NO ZIP', customer))
+                    logger.info(f'MISSING ZIP: {customer["first_name"]} {customer["last_name"]}')
+                    # customer_list.remove(customer)
+                    continue
+
+                if len(customer['tags']) == 0:
+                    # customer_list.remove(customer)
+                    logger.info(f'NO TAGS: {customer["first_name"]} {customer["last_name"]}')
+                    continue
+                # # for each tag, if the tag equals the 'month' argument, leave the customer alone and continue
+                # for tag in customer['tags'].split(','):
+                #     if tag == args.month:
+                #         logger.info(f'Matched {args.month}: {customer["first_name"]} {customer["last_name"]}')
                 logger.info(f'Adding customer to mailing list: {customer}')
                 mailing_address = "{} {}\n{}\n{}, {} {}".format(customer['first_name'],
                                                         customer['last_name'],
@@ -218,9 +221,6 @@ def parse_data(args, skipped, customer_list):
                                                         customer['zip'])
 
                 address_list.append(mailing_address)
-            # else:
-            #     # customer_list.remove(customer)
-            #     continue
 
 
     logger.info(f'{len(address_list)} customers remaining')
