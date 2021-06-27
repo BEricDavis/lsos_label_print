@@ -26,27 +26,18 @@ next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 
 months = ['January', 'February', 'March', 'April','May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-
-#@Gooey
+@Gooey
 def parse_script_args(home_dir, local_path, local_filename):
     logger = logging.getLogger(__name__)
     logger.info('parsing args')
 
-    #parser = GooeyParser()
-    parser = argparse.ArgumentParser()
+    parser = GooeyParser()
+    #parser = argparse.ArgumentParser()
 
     parser.add_argument('--month',
                         dest='month',
-                        default='October',
+                        choices=months,
                         help='Choose the month for the report.')
-    parser.add_argument('--date',
-                        dest='date',
-                        help='Choose any date in the month for which you wosh to generate labels.',)
-                        #widget='DateChooser')
-    parser.add_argument('--localfile',
-                        dest='localfile',
-                        help='Use a file that you have manually downloaded from LikeSew.',)
-                        #widget='FileChooser')
     parser.add_argument('--debug',
                         action='store_true',
                         help='Enable debug logging.')
@@ -270,15 +261,15 @@ def main():
         apikey = f.read().rstrip()
     url = f'https://{apikey}@the-little-shop-of-stitches.myshopify.com/admin/api/2021-04/customers.json'
     customers = []
-    if args.date:
+    # if args.date:
 
-        global next_month 
-        next_month= args.date
-        next_month = dt.datetime.strptime(next_month, '%Y-%m-%d')
+    #     global next_month 
+    #     next_month= args.date
+    #     next_month = dt.datetime.strptime(next_month, '%Y-%m-%d')
 
     configure_logging(args, local_path)
 
-    pdf_name = f'birthday_labels-{next_month.year}{next_month.month:02d}.pdf'
+    pdf_name = f'birthday_labels-{args.month}.pdf'
 
     output_pdf = os.path.join(local_path, pdf_name)
 
@@ -291,7 +282,7 @@ def main():
     # need to keep track of rows that are skipped
     skipped_file = os.path.join(f'{home_dir}',
                                 'Downloads',
-                                f'birthday_labels_skipped_{next_month.year}{next_month.month:02d}.txt')
+                                f'birthday_labels_skipped_{args.month}.txt')
     logger.info(f'Saving skipped customers in: {skipped_file}')
 
     try:
@@ -300,18 +291,12 @@ def main():
         logger.error(f'Could not open {skipped_file} for write')
         sys.exit(1)
 
-
-    if args.localfile:
-        logger.info(f'Using local file: {args.localfile}')
-        print('Using local file')
-        local_filename = args.localfile
-    else:
-        logger.info('Fetching customers from Shopify')
-        #download_report_v1(config, local_filename)
-        customer_list = fetch_customers( url=url, apikey=apikey, page_info='', customers=customers)
-        # logger.info(customer_list)
-        # sys.exit()
-        #write_customer_data(args, local_filename)
+    logger.info('Fetching customers from Shopify')
+    #download_report_v1(config, local_filename)
+    customer_list = fetch_customers( url=url, apikey=apikey, page_info='', customers=customers)
+    # logger.info(customer_list)
+    # sys.exit()
+    #write_customer_data(args, local_filename)
     customer_list = parse_data(args, skipped, customer_list)  
     logger.info(f'Found {len(customer_list)} customers')
     create_pdf(customer_list, pdf_name, output_pdf)

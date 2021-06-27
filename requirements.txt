@@ -5,9 +5,9 @@ cffi==1.13.2
 chardet==3.0.4
 colored==1.4.2
 cryptography==2.8
-cx-Freeze==6.0
+#cx-Freeze==6.0
 future==0.18.2
-Gooey==1.0.3
+Gooey==1.0.8
 idna==2.8
 numpy==1.18.1
 olefile==0.46
