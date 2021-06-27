@@ -39,7 +39,7 @@ def parse_script_args(home_dir, local_path, local_filename):
 
     parser.add_argument('--month',
                         dest='month',
-                        default='April',
+                        default='October',
                         help='Choose the month for the report.')
     parser.add_argument('--date',
                         dest='date',
@@ -154,49 +154,77 @@ def write_customer_data(customer_data, local_filename):
 def parse_data(args, skipped, customer_list):
     logger = logging.getLogger(__name__)
     logger.info(f'Searching {len(customer_list)} customers for {args.month}')
-    
+    address_list = []
     for customer in customer_list:
-        # if there are no tags, remove the customer and continue
-        if len(customer['tags']) == 0:
-            customer_list.remove(customer)
-            continue
-        # for each tag, if the tag equals the 'month' argument, leave the customer alone and continue
-        for tag in customer['tags'].split(','):
-            if tag == args.month:
-                logger.info(customer)
-                continue
-            else:
-                customer_list.remove(customer)
-                continue
+        logger.info(f'Checking: {customer}')
+
 
         
         if customer['first_name'] in (None, ""):
             skipped.write('{:20}: {}\n'.format('MISSING NAME', customer))
-            customer_list.remove(customer)
+            logger.info(f'MISSING NAME: {customer}')
+            # customer_list.remove(customer)
             continue
 
         if customer['last_name'] in (None, ""):
             skipped.write('{:20}: {}\n'.format('MISSING NAME', customer))
-            customer_list.remove(customer)
+            logger.info(f'MISSING NAME: {customer}')
+            # customer_list.remove(customer)
             continue
 
         if customer['address1'] in (None, ""):
             skipped.write('{:20}: {}\n'.format('NO ADDRESS', customer))
+            logger.info(f'MISSING ADDRESS: {customer["first_name"]} {customer["last_name"]}')
+            # customer_list.remove(customer)
             continue
+        if customer['address2'] not in (None, ""):
+            customer['address1'] = f'{customer["address1"]}\n{customer["address2"]}'
+
         # if there is no city, skip it
         if customer['city'] in (None, ""):
             skipped.write('{:20}: {}\n'.format('NO CITY', customer))
+            logger.info(f'MISSING CITY: {customer["first_name"]} {customer["last_name"]}')
+            # customer_list.remove(customer)
             continue
+
         # if there is no state skip it
         if customer['province_code'] in (None, ""):
             skipped.write('{:20}: {}\n'.format('NO STATE', customer))
+            logger.info(f'MISSING CITY: {customer["first_name"]} {customer["last_name"]}')
+            # customer_list.remove(customer)
             continue
+
         # if there is no zip, we don't have a valid address
         if customer['zip'] in (None, ""):
             skipped.write('{:20}: {}\n'.format('NO ZIP', customer))
+            logger.info(f'MISSING ZIP: {customer["first_name"]} {customer["last_name"]}')
+            # customer_list.remove(customer)
             continue
-    logger.info(f'{len(customer_list)} customers remaining')
-    return customer_list            
+
+        if len(customer['tags']) == 0:
+            # customer_list.remove(customer)
+            logger.info(f'NO TAGS: {customer["first_name"]} {customer["last_name"]}')
+            continue
+        # for each tag, if the tag equals the 'month' argument, leave the customer alone and continue
+        for tag in customer['tags'].split(','):
+            if tag == args.month:
+                logger.info(f'Matched {args.month}: {customer["first_name"]} {customer["last_name"]}')
+                logger.info(f'Adding customer to mailing list: {customer}')
+                mailing_address = "{} {}\n{}\n{}, {} {}".format(customer['first_name'],
+                                                        customer['last_name'],
+                                                        customer['address1'],
+                                                        customer['city'],
+                                                        customer['province_code'],
+                                                        customer['zip'])
+
+                address_list.append(mailing_address)
+            # else:
+            #     # customer_list.remove(customer)
+            #     continue
+
+
+    logger.info(f'{len(address_list)} customers remaining')
+    return address_list            
 
 def create_pdf(customer_list, pdf_name, output_pdf):
     logger = logging.getLogger(__name__)
