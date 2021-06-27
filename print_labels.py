@@ -26,7 +26,7 @@ next_month = (dt.date.today() + dt.timedelta(months_out * 365/12))
 
 months = ['January', 'February', 'March', 'April','May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-@Gooey
+@Gooey(progress_regex=r"^progress: (\d+)%$")
 def parse_script_args(home_dir, local_path, local_filename):
     logger = logging.getLogger(__name__)
     logger.info('parsing args')
@@ -83,6 +83,7 @@ def read_config():
 
 def fetch_customers(url, apikey, limit=250, page_info='', chunk=1, customers = ''):
     logger = logging.getLogger(__name__)
+    print(f"progress: {chunk*4}%")
     # cache the page_info we receive and use it for the query if we got one
     cached_page_info = page_info
     base_url = url
