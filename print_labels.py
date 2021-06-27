@@ -1,3 +1,4 @@
+#!/usr/bin/env/ python
 import argparse
 from reportlab.platypus.doctemplate import NextPageTemplate
 import datetime as dt
