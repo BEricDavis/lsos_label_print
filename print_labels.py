@@ -98,7 +98,17 @@ def fetch_customers(url, apikey, skipped, limit=250, page_info='', chunk=1, cust
         logger.debug(f'ENTRY: {entry}')
 
         if 'default_address' not in entry.keys():
-            skipped.write('{:20}: {}\n'.format('NO DEFAULT ADDRESS', entry))
+            customer = {
+                'first_name': entry['first_name'],
+                'last_name': entry['last_name'],
+                'address1': None,
+                'address2': None,
+                'city': None,
+                'province_code': None,
+                'zip': None,
+                'tags': entry['tags']
+            }
+            skipped.write('{:20}: {}\n'.format('NO ADDRESS', customer))
             continue
         customer = {
             'first_name': entry['first_name'],
