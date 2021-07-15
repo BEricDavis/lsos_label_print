@@ -14,7 +14,6 @@ import reportlab
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import Table
 from reportlab.platypus import TableStyle
-import shutil
 import webbrowser
 # with Gooey, it appears the script has to be launched with 'python <script>'
 from gooey import Gooey, GooeyParser
