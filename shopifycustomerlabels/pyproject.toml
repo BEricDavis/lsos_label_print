@@ -1,0 +1,33 @@
+[tool.briefcase]
+project_name = "Shopify Customer Labels"
+bundle = "com.thelittleshopofstitches"
+version = "0.0.1"
+url = "https://thelittleshopofstitches.com/shopifycustomerlabels"
+license = "BSD license"
+author = 'The Little Shop of Stitches, LLC'
+author_email = "feralmonkey@gmail.com"
+
+[tool.briefcase.app.shopifycustomerlabels]
+formal_name = "Shopify Customer Labels"
+description = "Creates customer labels from Shopify."
+icon = "src/shopifycustomerlabels/resources/shopifycustomerlabels"
+sources = ['src/shopifycustomerlabels']
+requires = []
+
+
+[tool.briefcase.app.shopifycustomerlabels.macOS]
+requires = []
+
+[tool.briefcase.app.shopifycustomerlabels.linux]
+requires = []
+system_requires = []
+
+[tool.briefcase.app.shopifycustomerlabels.windows]
+requires = []
+
+# Mobile deployments
+[tool.briefcase.app.shopifycustomerlabels.iOS]
+requires = []
+
+[tool.briefcase.app.shopifycustomerlabels.android]
+requires = []
