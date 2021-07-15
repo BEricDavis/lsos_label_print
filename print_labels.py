@@ -80,18 +80,26 @@ def read_config():
         logger.error(f"Could not read config: {e}")
         sys.exit(1)
 
-def fetch_customers(url, apikey, limit=250, page_info='', chunk=1, customers = ''):
+def fetch_customers(url, apikey, skipped, limit=250, page_info='', chunk=1, customers = ''):
     logger = logging.getLogger(__name__)
     print(f"progress: {chunk*4}%")
     # cache the page_info we receive and use it for the query if we got one
     cached_page_info = page_info
+    logger.debug(f'CACHED_PAGE_INFO: {cached_page_info}')
     base_url = url
     logger.debug(f'Chunk {chunk}')
     url += f'?limit={limit}&page_info={page_info}'
+    logger.debug(f'URL: {url}')
     response = requests.get(f'{url}')
     response.raise_for_status()
     # customers.append(response.json()['customers'])
+    #logger.debug(response.json())
     for entry in response.json()['customers']:
+        logger.debug(f'ENTRY: {entry}')
+
+        if 'default_address' not in entry.keys():
+            skipped.write('{:20}: {}\n'.format('NO DEFAULT ADDRESS', entry))
+            continue
         customer = {
             'first_name': entry['first_name'],
             'last_name': entry['last_name'],
@@ -113,7 +121,7 @@ def fetch_customers(url, apikey, limit=250, page_info='', chunk=1, customers = '
         page_info = links[0].split('page_info=')[1].split(';')[0].strip('<>')
 
     if cached_page_info != page_info:
-        return fetch_customers( base_url, apikey, limit, page_info, chunk=chunk+1, customers=customers)
+        return fetch_customers( base_url, apikey, skipped, limit, page_info, chunk=chunk+1, customers=customers)
 
     return customers
 
@@ -293,7 +301,7 @@ def main():
 
     logger.info('Fetching customers from Shopify')
     #download_report_v1(config, local_filename)
-    customer_list = fetch_customers( url=url, apikey=apikey, page_info='', customers=customers)
+    customer_list = fetch_customers( url=url, apikey=apikey, page_info='', customers=customers, skipped=skipped)
     # logger.info(customer_list)
     # sys.exit()
     #write_customer_data(args, local_filename)
