@@ -1,0 +1,91 @@
+[tool.briefcase]
+project_name = "Shopify Customer Labels"
+bundle = "com.thelittleshopofstitches"
+version = "0.0.1"
+url = "https://thelittleshopofstitches.com/shopifycustomerlabels"
+license = "BSD license"
+author = 'The Little Shop of Stitches, LLC'
+author_email = "feralmonkey@gmail.com"
+
+[tool.briefcase.app.shopifycustomerlabels]
+formal_name = "Shopify Customer Labels"
+description = "Creates customer labels from Shopify."
+icon = "src/shopifycustomerlabels/resources/shopifycustomerlabels"
+sources = ['src/shopifycustomerlabels']
+requires = [
+'altgraph==0.16.1',
+'arrow==1.1.1',
+'asn1crypto==1.2.0',
+'binaryornot==0.4.4',
+'briefcase==0.3.5',
+'certifi==2019.11.28',
+'cffi==1.13.2',
+'chardet==3.0.4',
+'charset-normalizer==2.0.2',
+'click==8.0.1',
+'colorama==0.4.4',
+'colored==1.4.2',
+'cookiecutter==1.7.3',
+'cryptography==2.8',
+'future==0.18.2',
+'gitdb==4.0.7',
+'GitPython==3.1.18',
+'Gooey==1.0.8.1',
+'idna==2.8',
+'Jinja2==2.11.3',
+'jinja2-time==0.2.0',
+'MarkupSafe==2.0.1',
+'numpy==1.18.1',
+'olefile==0.46',
+'packaging==19.2',
+'pefile==2019.4.18',
+'Pillow==6.2.1',
+'pip==21.1.3',
+'poyo==0.5.0',
+'psutil==5.6.7',
+'pyactiveresource==2.2.2',
+'pycparser==2.19',
+'pygtrie==2.4.2',
+'PyInstaller==3.5',
+'PyJWT==2.1.0',
+'pyOpenSSL==19.1.0',
+'pyparsing==2.4.6',
+'pypiwin32==223',
+'PySocks==1.7.1',
+'python-dateutil==2.8.2',
+'python-slugify==5.0.2',
+'pywin32==227',
+'pywin32-ctypes==0.2.0',
+'PyYAML==5.4.1',
+'reportlab==3.5.32',
+'requests==2.26.0',
+'selenium==3.141.0',
+'setuptools==57.2.0',
+'ShopifyAPI==8.4.1',
+'six==1.13.0',
+'smmap==4.0.0',
+'text-unidecode==1.3',
+'toml==0.10.2',
+'urllib3==1.25.7',
+'wheel==0.36.2',
+'win-inet-pton==1.1.0',
+'wxPython==4.1.1'
+]
+
+
+[tool.briefcase.app.shopifycustomerlabels.macOS]
+requires = []
+
+[tool.briefcase.app.shopifycustomerlabels.linux]
+requires = []
+system_requires = []
+
+[tool.briefcase.app.shopifycustomerlabels.windows]
+requires = []
+
+# Mobile deployments
+[tool.briefcase.app.shopifycustomerlabels.iOS]
+requires = []
+
+[tool.briefcase.app.shopifycustomerlabels.android]
+requires = []

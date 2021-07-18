@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Briefcase-Version: 0.3.5
+Name: shopifycustomerlabels
+Formal-Name: Shopify Customer Labels
+App-ID: com.thelittleshopofstitches.shopifycustomerlabels
+Version: 0.0.1
+Home-page: https://thelittleshopofstitches.com/shopifycustomerlabels
+Author: The Little Shop of Stitches, LLC
+Author-email: feralmonkey@gmail.com
+Summary: Creates customer labels from Shopify.
