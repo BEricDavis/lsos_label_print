@@ -11,3 +11,4 @@ shopify-api-key
 .vscode
 drivers
 __pycache__
+*.msi
